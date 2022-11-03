@@ -11,20 +11,11 @@ public class ChatServer implements Runnable {
     protected boolean isStopped = false;
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
-    private ArrayList<ChatRoom> chatRooms;
-    private ArrayList<User> accounts;
-    private ArrayList<User> admins;
+    private static ServerData data;
 
     public ChatServer(int port) {
         this.port = port;
-        chatRooms = new ArrayList<>();
-        accounts = new ArrayList<>();
-        admins = new ArrayList<>();
-
-        // accounts for testing
-        accounts.add(new User("anna", "software developer", "anna123", "123"));
-        accounts.add(new User("emma", "software developer", "emma123", "123"));
-        accounts.add(new User("alex", "software developer", "alex123", "123"));
+        data = new ServerData();
     }
 
     @Override
@@ -36,7 +27,7 @@ public class ChatServer implements Runnable {
             while(!isStopped()) {
                 try {
                     Socket socket = serverSocket.accept();
-                    threadPool.submit(new ChatClient(socket));
+                    threadPool.submit(new ChatClientHandler(socket));
                 }
                 catch (IOException e) {
                     System.err.println("Failed to accept socket");
@@ -52,10 +43,6 @@ public class ChatServer implements Runnable {
         }
     }
 
-    private synchronized boolean isStopped() {
-        return this.isStopped;
-    }
-
     public synchronized void stop() {
         this.isStopped = true;
         try {
@@ -65,6 +52,23 @@ public class ChatServer implements Runnable {
         }
     }
 
+    public static User loginUser(String username, String password) {
+        for (User account : data.accounts) {
+            if(
+                    account.getUsername().equals(username)
+                    && account.getPassword().equals(password)
+                    && !account.isLoggedIn()
+            ) {
+                return account;
+            }
+        }
+        return null;
+    }
+
+
+    private synchronized boolean isStopped() {
+        return this.isStopped;
+    }
 }
 
 

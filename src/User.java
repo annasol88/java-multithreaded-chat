@@ -1,6 +1,7 @@
 public class User {
     private final String name;
     private final String bio;
+
     private final String username;
     private final String password;
     private boolean isLoggedIn;
@@ -19,5 +20,13 @@ public class User {
 
     public void setLoggedIn(boolean loggedIn) {
         isLoggedIn = loggedIn;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
     }
 }
