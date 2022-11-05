@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,12 +21,12 @@ public class ChatServer implements Runnable {
     public void run() {
         try {
             ServerSocket serverSocket = new ServerSocket(port);
-            System.out.println("Server is waiting for connections...");
+            System.out.println("Server is running...");
 
             while(!isStopped()) {
                 try {
                     Socket socket = serverSocket.accept();
-                    threadPool.submit(new ChatClientHandler(socket));
+                    threadPool.submit(new ChatClientThread(socket));
                 }
                 catch (IOException e) {
                     System.err.println("Failed to accept socket");
@@ -52,12 +51,12 @@ public class ChatServer implements Runnable {
         }
     }
 
-    public static User loginUser(String username, String password) {
+    public static synchronized User loginUser(String username, String password) {
         for (User account : data.accounts) {
             if(
-                    account.getUsername().equals(username)
-                    && account.getPassword().equals(password)
-                    && !account.isLoggedIn()
+                account.getUsername().equals(username)
+                && account.getPassword().equals(password)
+                && !account.isLoggedIn()
             ) {
                 return account;
             }

@@ -5,46 +5,53 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ChatClient {
-    // get these from args (?)
-    private static final int PORT = 9876;
-    private static final String SERVER_IP = "localhost";
 
     private static BufferedReader input;
     private static BufferedReader userInput;
     private static PrintWriter output;
 
-    public static void main(String[] args) throws IOException {
-        Socket socket = new Socket(SERVER_IP, PORT);
-        input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        userInput = new BufferedReader(new InputStreamReader(System.in));
-        output = new PrintWriter(socket.getOutputStream(), true);
-
-        showLoginRegisterScreen();
-    }
-
-    private static void showLoginRegisterScreen() {
-        //TODO
-        //example
-        String request = "login anna123";
-        System.out.println("sending request " + request);
-        output.println(request);
-
-        // change to: while keyboard request is not logout or sys.exit
+    public ChatClient(Socket socket) {
         try {
-            while(true) {
-                Object response = input.readLine();
-                System.out.println(response);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            userInput = new BufferedReader(new InputStreamReader(System.in));
+            output = new PrintWriter(socket.getOutputStream(), true);
+
+            startClient();
+        }
+        catch(IOException e) {
+            System.err.println("Could not connect to socket input and output streams.");
         }
         finally {
-            logout();
+            stop();
         }
-
     }
 
-    private static Map<String, String> getLoginDetails() {
+    private void startClient() {
+        try {
+            showStartMenu();
+            String userRequest = userInput.readLine();
+            //TODO - handle user request here
+            // example communication below
+            output.println(userRequest);
+            output.flush();
+            Object response = input.readLine();
+            System.out.println(response);
+
+        } catch (IOException e) {
+            System.err.println("Server connection lost.");
+        }
+        finally {
+            stop();
+        }
+    }
+
+    private void showStartMenu() {
+        System.out.println("1. login");
+        System.out.println("2. register");
+        System.out.println("3. stop");
+    }
+
+    private Map<String, String> getLoginDetails() {
         //TODO
         //a map is probs the best way to handle user details
         Map<String, String> login = new HashMap<>();
@@ -57,9 +64,9 @@ public class ChatClient {
         //TODO
     }
 
-    private static void logout() {
+    private static void stop() {
         try {
-            output.write("logout");
+            output.write("stop");
             output.close();
             input.close();
         }
