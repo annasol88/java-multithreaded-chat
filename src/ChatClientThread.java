@@ -1,11 +1,12 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.List;
 
 public class ChatClientThread implements Runnable {
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
-    // User associated with the running client
+    // User currently logged into the client
     private User user;
 
     public ChatClientThread(Socket socket) {
@@ -13,26 +14,29 @@ public class ChatClientThread implements Runnable {
             this.socket = socket;
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
+
+            //uncomment if test user needed
+            //user = ServerData.accounts.get(0);
         }
         catch(IOException e) {
-            System.err.println("Failed to get socket input and output stream.");
-            e.printStackTrace();
+            System.err.println("Failed to connect to socket input and output stream.");
+            stop();
         }
     }
 
     @Override
     public void run() {
         try {
-            String request = input.readLine();
-            while (!request.equals("stop")) {
-                //TODO - handle request here
-                // example
-                output.println("request received " + request);
-                output.flush();
-                request = input.readLine();
+            ServerRequest request = null;
+            while (request != ServerRequest.STOP) {
+                request = ServerRequest.valueOf(input.readLine());
+                switch(request) {
+                    case GET_CHATS: getChatRooms();
+                    case STOP: stop();
+                }
             }
         } catch(IOException e) {
-            System.err.println("Failed to read input from client");
+            System.out.println("client disconnected: " + socket.getPort());
         } finally {
             stop();
         }
@@ -44,23 +48,18 @@ public class ChatClientThread implements Runnable {
             input.close();
         }
         catch(IOException e) {
-            System.err.println("Could not close the socket, input or output stream.");
+            System.err.println("Failed to close the input or output stream.");
             e.printStackTrace();
         }
     }
 
-
     private void loginUser(String username, String password) {
         //example server request
         user = ChatServer.loginUser(username, password);
-        if(user != null) {
-            output.write(user.getUsername());
-        } else {
-            output.write("invalid username or password");
-        }
     }
 
-    private void viewChats() {
-        //TODO
+    private void getChatRooms() {
+        List<ChatRoom> chats = ChatServer.getUserChatRooms(user);
+        output.println(chats);
     }
 }

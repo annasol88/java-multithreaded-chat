@@ -1,13 +1,14 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class ChatServer implements Runnable {
     protected final int port;
     protected ServerSocket serverSocket = null;
-    protected boolean isStopped = false;
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
     private static ServerData data;
@@ -23,14 +24,16 @@ public class ChatServer implements Runnable {
             ServerSocket serverSocket = new ServerSocket(port);
             System.out.println("Server is running...");
 
-            while(!isStopped()) {
+            while(!serverSocket.isClosed()) {
                 try {
                     Socket socket = serverSocket.accept();
                     threadPool.submit(new ChatClientThread(socket));
+                    System.out.println("new client connected: " + socket.getPort());
                 }
                 catch (IOException e) {
                     System.err.println("Failed to accept socket");
                     e.printStackTrace();
+                    break;
                 }
             }
         } catch (IOException e) {
@@ -43,7 +46,7 @@ public class ChatServer implements Runnable {
     }
 
     public synchronized void stop() {
-        this.isStopped = true;
+        System.out.println("closed");
         try {
             this.serverSocket.close();
         } catch (IOException e) {
@@ -64,9 +67,13 @@ public class ChatServer implements Runnable {
         return null;
     }
 
+    public static List<ChatRoom> getUserChatRooms(User user) {
+        return data.chatRooms.stream().filter(n -> n.getMembers().contains(user))
+                .collect(Collectors.toList());
+    }
 
-    private synchronized boolean isStopped() {
-        return this.isStopped;
+    public static void addChatRoom(ChatRoom room) {
+        data.chatRooms.add(room);
     }
 }
 

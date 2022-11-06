@@ -6,7 +6,7 @@ import java.net.UnknownHostException;
  * Runner class for our client.
  * Allow Parallel runs in config to host multiple clients on the server
  */
-public class ClientRunner {
+public class ClientDriver {
     // get these from args (?)
     private static final int PORT = 9876;
     private static final String SERVER_IP = "localhost";
