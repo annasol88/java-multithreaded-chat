@@ -15,7 +15,7 @@ public class ChatClientThread implements Runnable {
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
 
-            //uncomment if test user needed
+            //TO REMOVE anna - for testing with a logged in user
             //user = ServerData.accounts.get(0);
         }
         catch(IOException e) {
@@ -31,7 +31,7 @@ public class ChatClientThread implements Runnable {
             while (request != ServerRequest.STOP) {
                 request = ServerRequest.valueOf(input.readLine());
                 switch(request) {
-                    case GET_CHATS: getChatRooms();
+                    case GET_CHATS: getChatRoomNames();
                     case STOP: stop();
                 }
             }
@@ -58,8 +58,12 @@ public class ChatClientThread implements Runnable {
         user = ChatServer.loginUser(username, password);
     }
 
-    private void getChatRooms() {
+    private void getChatRoomNames() {
         List<ChatRoom> chats = ChatServer.getUserChatRooms(user);
-        output.println(chats);
+        StringBuilder chatsString = new StringBuilder();
+        for(ChatRoom chat: chats) {
+            chatsString.append(chat.getName()).append(",");
+        }
+        output.println(chatsString);
     }
 }

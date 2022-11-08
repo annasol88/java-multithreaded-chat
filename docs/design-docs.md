@@ -6,7 +6,8 @@ A new thread is then used to run each new client that is created.
 This is submitted into a threadpool on the server to be handled.
 
 ##Synchronization issues
-
+###login
+###chat
 
 ##IO Streams
 printWriter is used as an output stream between our client and client handler
@@ -23,8 +24,6 @@ since this allows threads to be created as required and reused when they become 
 ## User Interface
 User Interface is implemented as a console application. //TODO
 
-
-##
 
 
 
