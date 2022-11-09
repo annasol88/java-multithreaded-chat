@@ -29,6 +29,18 @@ public class ChatClient {
         System.out.println("1. login");
         System.out.println("2. register");
         System.out.println("3. stop");
+        int choice = getUserOptionSelection(3, true);
+        switch (choice) {
+            case 1:
+                System.out.println("to do");
+                break;
+            case 2:
+                output.println(ServerRequest.REGISTER_USER);
+                break;
+            case 3:
+                System.out.println("to dooo");
+                break;
+        }
     }
 
     private int getUserOptionSelection(int limit, boolean allowEscape) {
@@ -67,6 +79,7 @@ public class ChatClient {
             return -1;
         }
     }
+
 
     private void mainMenu() {
         try {

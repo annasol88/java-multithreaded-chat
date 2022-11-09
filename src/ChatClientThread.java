@@ -31,6 +31,7 @@ public class ChatClientThread implements Runnable {
             while (request != ServerRequest.STOP) {
                 request = ServerRequest.valueOf(input.readLine());
                 switch(request) {
+                    case REGISTER_USER: registerUser();
                     case GET_CHATS: getChatRoomNames();
                     case STOP: stop();
                 }
@@ -57,6 +58,11 @@ public class ChatClientThread implements Runnable {
         //example server request
         user = ChatServer.loginUser(username, password);
     }
+
+    private void registerUser() throws IOException {
+        ChatServer.registerUser();
+    }
+
 
     private void getChatRoomNames() {
         List<ChatRoom> chats = ChatServer.getUserChatRooms(user);

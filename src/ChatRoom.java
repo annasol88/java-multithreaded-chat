@@ -1,12 +1,13 @@
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatRoom {
 
     private String name;
     private ArrayList<Message> messages;
-    private ArrayList<User> members;
+    private ConcurrentHashMap<String, User> members;
 
-    public ChatRoom(String name, ArrayList<User> members) {
+    public ChatRoom(String name, ConcurrentHashMap<String, User> members) {
         this.name = name;
         this.members = members;
         messages = new ArrayList<>();
@@ -20,7 +21,7 @@ public class ChatRoom {
         return messages;
     }
 
-    public ArrayList<User> getMembers() {
+    public ConcurrentHashMap<String, User> getMembers() {
         return members;
     }
 
@@ -29,7 +30,7 @@ public class ChatRoom {
     }
 
     public void addMember(User member) {
-        this.members.add(member);
+        this.members.put(member.getUsername(), member);
     }
 
 }
