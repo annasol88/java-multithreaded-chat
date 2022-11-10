@@ -29,6 +29,18 @@ public class ChatClient {
         System.out.println("1. login");
         System.out.println("2. register");
         System.out.println("3. stop");
+        int choice = getUserOptionSelection(3, true);
+        switch (choice) {
+            case 1:
+                System.out.println("to do");
+                break;
+            case 2:
+                output.println(ServerRequest.REGISTER_USER);
+                break;
+            case 3:
+                System.out.println("to dooo");
+                break;
+        }
     }
 
     private int getUserOptionSelection(int limit, boolean allowEscape) {
@@ -67,6 +79,7 @@ public class ChatClient {
             return -1;
         }
     }
+
 
     private void mainMenu() {
         try {
@@ -114,7 +127,7 @@ public class ChatClient {
         }
 
         String[] chatNames = chats.split(",");
-        for(int i = 1; i < chatNames.length; i++) {
+        for(int i = 1; i < chatNames.length + 1; i++) {
             System.out.println(i + ". " + chatNames[i-1]);
         }
 
@@ -123,9 +136,7 @@ public class ChatClient {
 
         if(selection != 0) {
             output.println(ServerRequest.OPEN_CHAT_ROOM);
-            output.println(chatNames[selection]);
-            //demo
-            new ChatRoomWindow(new ChatRoom("chat 1", new ArrayList<>()));
+            output.println(chatNames[selection-1]);
         }
     }
 
