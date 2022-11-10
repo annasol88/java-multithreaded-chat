@@ -13,9 +13,9 @@ public class ChatClient {
             userInput = new BufferedReader(new InputStreamReader(System.in));
             output = new PrintWriter(socket.getOutputStream(), true);
 
-            loginMenu();
+            //loginMenu();
             //TO REMOVE anna - just for testing my stuff plz ignore
-            //mainMenu();
+            mainMenu();
         }
         catch(IOException e) {
             System.err.println("Could not connect to socket input and output streams.");

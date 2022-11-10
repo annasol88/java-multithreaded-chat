@@ -1,17 +1,30 @@
-import com.sun.source.tree.ReturnTree;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 
-public class ChatRoomWindow extends JFrame {
+/*
+ *
+ */
+public class ChatRoomWindow extends JFrame implements Runnable{
     private ChatRoom chatroom;
     private User currentUser;
+    private BufferedReader input;
+    private PrintWriter output;
 
-    public ChatRoomWindow(ChatRoom chatRoom, User currentUser) {
+    private JTextField textField;
+    private JTextArea chatArea;
+
+    public ChatRoomWindow(Socket socket, ChatRoom chatRoom, User currentUser) throws IOException{
         this.chatroom = chatRoom;
         this.currentUser = currentUser;
+        output = new PrintWriter(socket.getOutputStream(), true);
+        input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle(chatRoom.getName());
@@ -28,18 +41,25 @@ public class ChatRoomWindow extends JFrame {
     }
 
     public void sendMessage() {
+        Message message = new Message(textField.getText(), currentUser,null);
+        String messageString = messageFormat(message);
 
+        printMessage(messageString);
+        output.println(messageString);
     }
 
-    public void receiveMessage() {}
+    public void printMessage(String message) {
+        chatArea.append(message + "\n");
+    }
 
     private void createChatBox() {
         JScrollPane jScrollPane = new javax.swing.JScrollPane();
-        JTextArea chatArea = new JTextArea();
+        chatArea = new JTextArea();
         chatArea.setColumns(5);
         chatArea.setLineWrap(true);
         chatArea.setRows(5);
         chatArea.setMinimumSize(new Dimension(300, 400));
+        chatArea.setBackground(Color.LIGHT_GRAY);
         jScrollPane.setViewportView(chatArea);
 
         for(Message message : chatroom.getMessages()){
@@ -50,14 +70,14 @@ public class ChatRoomWindow extends JFrame {
     }
 
     private void createMessageField() {
-        JButton b = new JButton("send");
-        JTextField t = new JTextField("Type a message...", 16);
+        JButton button = new JButton("send");
+        textField = new JTextField("Type a message...", 16);
         JPanel p = new JPanel();
 
-        b.addActionListener(new Listener());
+        button.addActionListener(new Listener());
 
-        p.add(t);
-        p.add(b);
+        p.add(textField);
+        p.add(button);
         add(p, BorderLayout.SOUTH);
     }
 
@@ -68,13 +88,23 @@ public class ChatRoomWindow extends JFrame {
         return message.getSender().getName() + ": " + message.getText();
     }
 
+    @Override
+    public void run() {
+        //TODO change to while thread open
+        while(true) {
+            try {
+                printMessage(input.readLine().trim());
+            }
+            catch (IOException e) {
+                //handle this
+            }
+        }
+    }
+
     class Listener implements ActionListener {
 
         public void actionPerformed(ActionEvent e) {
-            String s = e.getActionCommand();
-            if(s.equals("send")) {
                 sendMessage();
-            }
         }
     }
 }

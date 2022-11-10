@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class ChatRoomThread implements Runnable {
 
-    public ArrayList<ChatRoomThread> runningChatRooms = new ArrayList<>();
+    public ArrayList<ChatRoomThread> runningChatThreads;
     private ChatRoom chatRoom;
     private User user;
     private ChatRoomWindow window;
@@ -16,15 +16,14 @@ public class ChatRoomThread implements Runnable {
     private BufferedReader input;
     private PrintWriter output;
 
-    public ChatRoomThread(Socket socket, ChatRoom chatRoom, User user) {
+    public ChatRoomThread(Socket socket, ChatRoom chatRoom, User user, ArrayList<ChatRoomThread> runningChats) {
         try {
             this.chatRoom = chatRoom;
             this.user = user;
             this.socket = socket;
+            this.runningChatThreads = runningChats;
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
-
-            new ChatRoomWindow(chatRoom, user);
         }
         catch(UnknownHostException e) {
             System.err.println("Unknown host, please re-verify, try again.");
@@ -44,6 +43,8 @@ public class ChatRoomThread implements Runnable {
     @Override
     public void run() {
         try {
+            new Thread(new ChatRoomWindow(socket, chatRoom, user)).start();
+
             while (socket.isConnected()) {
                 String message = input.readLine().trim();
                 sendToAll(message);
@@ -56,7 +57,7 @@ public class ChatRoomThread implements Runnable {
     }
 
     private void sendToAll(String message) {
-        for(ChatRoomThread runningChat : runningChatRooms) {
+        for(ChatRoomThread runningChat : runningChatThreads) {
             //send message to all running chats for the same chat room that isn't itself
             if(!runningChat.equals(this) && runningChat.getChatRoom().equals(chatRoom)) {
                 //server.saveMessage(chatRoom, message);
@@ -67,7 +68,7 @@ public class ChatRoomThread implements Runnable {
 
     private void stop() {
         try {
-            runningChatRooms.remove(this);
+            runningChatThreads.remove(this);
             output.close();
             input.close();
             socket.close();
