@@ -1,6 +1,6 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.List;
+import java.util.ArrayList;
 
 public class ChatClient {
     private static BufferedReader input;
@@ -108,7 +108,7 @@ public class ChatClient {
         String chats = input.readLine();
 
         // if user is not part of any chat rooms.
-        if(chats.equals("")) {
+        if(chats == null || chats.equals("")) {
             System.out.println("You aren't currently part of any chat rooms.");
             return;
         }
@@ -122,9 +122,11 @@ public class ChatClient {
         int selection = getUserOptionSelection(chatNames.length, true);
 
         if(selection != 0) {
-            //open chat window(chatNames[selection])
+            output.println(ServerRequest.OPEN_CHAT_ROOM);
+            output.println(chatNames[selection]);
+            //demo
+            new ChatRoomWindow(new ChatRoom("chat 1", new ArrayList<>()));
         }
-        //return to main menu here
     }
 
     private static void stop() {

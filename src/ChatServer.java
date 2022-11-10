@@ -1,20 +1,23 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class ChatServer implements Runnable {
+    protected final String serverIP;
     protected final int port;
     protected ServerSocket serverSocket = null;
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
     private static ServerData data;
 
-    public ChatServer(int port) {
+    public ChatServer(int port, String serverIP) {
         this.port = port;
+        this.serverIP = serverIP;
         data = new ServerData();
     }
 
@@ -55,7 +58,7 @@ public class ChatServer implements Runnable {
     }
 
     public static synchronized User loginUser(String username, String password) {
-        for (User account : data.accounts) {
+        for (User account : ServerData.accounts) {
             if(
                 account.getUsername().equals(username)
                 && account.getPassword().equals(password)
@@ -70,6 +73,22 @@ public class ChatServer implements Runnable {
     public static List<ChatRoom> getUserChatRooms(User user) {
         return data.chatRooms.stream().filter(n -> n.getMembers().contains(user))
                 .collect(Collectors.toList());
+    }
+
+    public void openChatRoomByName(String name) {
+        try {
+            Socket socket = new Socket(serverIP, port);
+            serverSocket.accept();
+            System.out.println("new chatroom connected: " + socket.getPort());
+            //find chatroom
+            //threadPool.submit(new ChatRoomThread(socket, chatRoom));
+        }
+        catch(UnknownHostException e) {
+            System.err.println("Unknown host, please re-verify, try again.");
+        }
+        catch (IOException e) {
+            System.err.println("Failed to create Socket.");
+        }
     }
 
     public static void addChatRoom(ChatRoom room) {

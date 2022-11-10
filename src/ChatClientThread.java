@@ -16,7 +16,7 @@ public class ChatClientThread implements Runnable {
             output = new PrintWriter(socket.getOutputStream(), true);
 
             //TO REMOVE anna - for testing with a logged in user
-            //user = ServerData.accounts.get(0);
+            user = ServerData.accounts.get(0);
         }
         catch(IOException e) {
             System.err.println("Failed to connect to socket input and output stream.");
@@ -32,6 +32,7 @@ public class ChatClientThread implements Runnable {
                 request = ServerRequest.valueOf(input.readLine());
                 switch(request) {
                     case GET_CHATS: getChatRoomNames();
+                    case OPEN_CHAT_ROOM: openChatRoom();
                     case STOP: stop();
                 }
             }
@@ -65,5 +66,10 @@ public class ChatClientThread implements Runnable {
             chatsString.append(chat.getName()).append(",");
         }
         output.println(chatsString);
+    }
+
+    private void openChatRoom() throws IOException{
+        String name = input.readLine();
+       // ChatServer.openChatRoomByName(name);
     }
 }
