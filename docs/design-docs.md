@@ -1,6 +1,6 @@
 # Design Documentation
 
-## Use of threads
+## Thread safety
 The application implements 3 Runnable Object types. 
 1. The server which runs on its own thread, and maintains a threadpool responsible for scheduling
 the client and chat threads submitted to it.
@@ -8,14 +8,15 @@ the client and chat threads submitted to it.
 2. The ChatClientThread, which runs a separate thread for each client currently using the application, that listens to
 the client requests and returns relevant data from the server. 
 
-3. The ChatRoomThread, which runs a separate thread for each chat window a logged-in client has open.
+3. The ChatRoomHandler, which runs a separate thread for each chat window a logged-in client has open.
 This thread listens to incoming messages from other chat users allowing thread safety between messages sent and received in the chat.
 
 
-##Synchronization issues
+##Synchronization issues 
 ###login
 ###chat
 
+##Deadlocks
 
 ##IO Streams
 printWriter is used as an output stream between our client and client handler

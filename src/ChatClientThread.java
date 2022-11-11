@@ -43,7 +43,7 @@ public class ChatClientThread implements Runnable {
                         getChatRoomNames();
                         break;
                     case OPEN_CHAT_ROOM:
-                        openChatRoom();
+                        ChatRoomOpened();
                         break;
                     case STOP:
                         stop();
@@ -77,7 +77,6 @@ public class ChatClientThread implements Runnable {
         server.registerUser();
     }
 
-
     private void getChatRoomNames() {
         List<ChatRoom> chats = server.getUserChatRooms(user);
         StringBuilder chatsString = new StringBuilder();
@@ -87,12 +86,15 @@ public class ChatClientThread implements Runnable {
         output.println(chatsString);
     }
 
-    private void openChatRoom() throws IOException {
+    private void ChatRoomOpened() throws IOException {
         String name = input.readLine();
         ChatRoom roomToOpen = server.getChatRoomByName(name);
 
-        ChatRoomThread chatThread = new ChatRoomThread(socket, roomToOpen, user, server.getRunningChats());
-        server.addRunningChat(chatThread);
-        new Thread(chatThread).start();
+
+//      create listener thread
+//        ChatRoomHandler chatThread = new ChatRoomHandler(socket, roomToOpen, user, server.getRunningChats());
+//        Thread thread = new Thread(chatThread);
+//        server.addRunningChat(chatThread);
+//        thread.start();
     }
 }

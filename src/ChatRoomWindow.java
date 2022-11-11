@@ -8,11 +8,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-/*
- *
- */
-public class ChatRoomWindow extends JFrame implements Runnable{
-    private ChatRoom chatroom;
+public class ChatRoomWindow extends JFrame {
     private User currentUser;
     private BufferedReader input;
     private PrintWriter output;
@@ -20,14 +16,13 @@ public class ChatRoomWindow extends JFrame implements Runnable{
     private JTextField textField;
     private JTextArea chatArea;
 
-    public ChatRoomWindow(Socket socket, ChatRoom chatRoom, User currentUser) throws IOException{
-        this.chatroom = chatRoom;
+    public ChatRoomWindow(String name, Socket socket, User currentUser) throws IOException{
         this.currentUser = currentUser;
         output = new PrintWriter(socket.getOutputStream(), true);
         input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle(chatRoom.getName());
+        setTitle(name);
         setLayout(new BorderLayout());
         setLocation(200, 100);
         setPreferredSize(new Dimension(400, 500));
@@ -41,11 +36,10 @@ public class ChatRoomWindow extends JFrame implements Runnable{
     }
 
     public void sendMessage() {
-        Message message = new Message(textField.getText(), currentUser,null);
-        String messageString = messageFormat(message);
+        String message = textField.getText();
 
-        printMessage(messageString);
-        output.println(messageString);
+        printMessage("You: " + message);
+        output.println(formatMessageToSend(message));
     }
 
     public void printMessage(String message) {
@@ -62,16 +56,12 @@ public class ChatRoomWindow extends JFrame implements Runnable{
         chatArea.setBackground(Color.LIGHT_GRAY);
         jScrollPane.setViewportView(chatArea);
 
-        for(Message message : chatroom.getMessages()){
-            chatArea.append(messageFormat(message));
-        }
-
         add(chatArea, BorderLayout.CENTER);
     }
 
     private void createMessageField() {
         JButton button = new JButton("send");
-        textField = new JTextField("Type a message...", 16);
+        textField = new JTextField("", 12);
         JPanel p = new JPanel();
 
         button.addActionListener(new Listener());
@@ -81,30 +71,13 @@ public class ChatRoomWindow extends JFrame implements Runnable{
         add(p, BorderLayout.SOUTH);
     }
 
-    private String messageFormat(Message message) {
-        if(message.getSender().equals(this.currentUser)) {
-            return "you: " + message.getText();
-        }
-        return message.getSender().getName() + ": " + message.getText();
-    }
-
-    @Override
-    public void run() {
-        //TODO change to while thread open
-        while(true) {
-            try {
-                printMessage(input.readLine().trim());
-            }
-            catch (IOException e) {
-                //handle this
-            }
-        }
+    private String formatMessageToSend(String message) {
+        return currentUser.getName() + ": " + message;
     }
 
     class Listener implements ActionListener {
-
         public void actionPerformed(ActionEvent e) {
-                sendMessage();
+            sendMessage();
         }
     }
 }

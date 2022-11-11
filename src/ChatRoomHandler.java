@@ -3,12 +3,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
-public class ChatRoomThread implements Runnable {
+public class ChatRoomHandler implements Runnable {
 
-    public ArrayList<ChatRoomThread> runningChatThreads;
+    public ArrayList<ChatRoomHandler> runningChatThreads;
     private ChatRoom chatRoom;
     private User user;
     private ChatRoomWindow window;
@@ -16,18 +15,16 @@ public class ChatRoomThread implements Runnable {
     private BufferedReader input;
     private PrintWriter output;
 
-    public ChatRoomThread(Socket socket, ChatRoom chatRoom, User user, ArrayList<ChatRoomThread> runningChats) {
+    public ChatRoomHandler(Socket socket, ChatRoom chatRoom, User user, ArrayList<ChatRoomHandler> runningChats) {
         try {
+            this.runningChatThreads = runningChats;
             this.chatRoom = chatRoom;
             this.user = user;
             this.socket = socket;
-            this.runningChatThreads = runningChats;
+
+            this.runningChatThreads.add(this);
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
-        }
-        catch(UnknownHostException e) {
-            System.err.println("Unknown host, please re-verify, try again.");
-            stop();
         }
         catch (IOException e) {
             System.err.println("Could not connect to server. Please ensure The server is running.");
@@ -43,9 +40,8 @@ public class ChatRoomThread implements Runnable {
     @Override
     public void run() {
         try {
-            new Thread(new ChatRoomWindow(socket, chatRoom, user)).start();
 
-            while (socket.isConnected()) {
+            while(true) {
                 String message = input.readLine().trim();
                 sendToAll(message);
             }
@@ -57,7 +53,7 @@ public class ChatRoomThread implements Runnable {
     }
 
     private void sendToAll(String message) {
-        for(ChatRoomThread runningChat : runningChatThreads) {
+        for(ChatRoomHandler runningChat : runningChatThreads) {
             //send message to all running chats for the same chat room that isn't itself
             if(!runningChat.equals(this) && runningChat.getChatRoom().equals(chatRoom)) {
                 //server.saveMessage(chatRoom, message);

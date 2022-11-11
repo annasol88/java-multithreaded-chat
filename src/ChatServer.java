@@ -15,7 +15,7 @@ public class ChatServer implements Runnable {
     protected ServerSocket serverSocket = null;
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
-    private ArrayList<ChatRoomThread> runningChats = new ArrayList<>();
+    private ArrayList<ChatRoomHandler> runningChats = new ArrayList<>();
 
     private static BufferedReader userInput;
     private static ServerData data;
@@ -111,11 +111,11 @@ public class ChatServer implements Runnable {
         return data.chatRooms.get(name);
     }
 
-    public void addRunningChat(ChatRoomThread chatThread) {
+    public void addRunningChat(ChatRoomHandler chatThread) {
         this.runningChats.add(chatThread);
     }
 
-    public ArrayList<ChatRoomThread> getRunningChats() {
+    public ArrayList<ChatRoomHandler> getRunningChats() {
         return runningChats;
     }
 }

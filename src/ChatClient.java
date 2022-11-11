@@ -3,19 +3,26 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 public class ChatClient {
+    private Socket socket;
     private static BufferedReader input;
     private static BufferedReader userInput;
     private static PrintWriter output;
 
+    private User user;
+
     public ChatClient(Socket socket) {
         try {
+            this.socket = socket;
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             userInput = new BufferedReader(new InputStreamReader(System.in));
             output = new PrintWriter(socket.getOutputStream(), true);
 
             //loginMenu();
             //TO REMOVE anna - just for testing my stuff plz ignore
+            ServerData data = new ServerData();
+            user = data.accounts.get("anna123");
             mainMenu();
+
         }
         catch(IOException e) {
             System.err.println("Could not connect to socket input and output streams.");
@@ -80,7 +87,6 @@ public class ChatClient {
         }
     }
 
-
     private void mainMenu() {
         try {
             boolean logout = false;
@@ -137,6 +143,12 @@ public class ChatClient {
         if(selection != 0) {
             output.println(ServerRequest.OPEN_CHAT_ROOM);
             output.println(chatNames[selection-1]);
+
+            System.out.println("Room window running, please exit to return to main app.");
+
+            new ChatRoomWindow(chatNames[selection-1], socket, user);
+            //while chat open
+            //listen and
         }
     }
 
