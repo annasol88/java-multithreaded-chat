@@ -1,6 +1,5 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -15,16 +14,14 @@ public class ChatServer implements Runnable {
     protected ServerSocket serverSocket = null;
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
-    private ArrayList<ChatRoomHandler> runningChats = new ArrayList<>();
+    private ArrayList<ChatClientThread> runningChats = new ArrayList<>();
 
-    private static BufferedReader userInput;
     private static ServerData data;
 
     public ChatServer(int port, String serverIP) {
         this.port = port;
         this.serverIP = serverIP;
         data = new ServerData();
-        userInput = new BufferedReader(new InputStreamReader(System.in));
     }
 
     @Override
@@ -63,60 +60,36 @@ public class ChatServer implements Runnable {
         }
     }
 
-    static synchronized void registerUser() throws IOException {
-
-        System.out.println("Please enter username");
-        System.out.println(">>>");
-        String username = userInput.readLine();
-        System.out.println(username);
-        for (User account : ServerData.accounts.values()) {
-            System.out.println(account.getUsername().toLowerCase());
-            if (account.getUsername().toLowerCase().equals(username.toLowerCase())) {
-                System.out.println("This username already exists");
-                registerUser();
-            }
-        }
-        System.out.println("Please enter your name");
-        System.out.println(">>>");
-        String name = userInput.readLine();
-        System.out.println("Please enter your bio");
-        System.out.println(">>>");
-        String bio = userInput.readLine();
-        System.out.println("Please set password");
-        System.out.println(">>>");
-        String password = userInput.readLine();
-        User user = new User(name, username, bio, password, new ArrayList<>());
-        data.addAccount(user);
-    }
-
-    public synchronized User loginUser(String username, String password) {
-        for (User account : ServerData.accounts.values()) {
-            if(
-                account.getUsername().equals(username)
-                && account.getPassword().equals(password)
-                && !account.isLoggedIn()
-            ) {
-                return account;
-            }
-        }
-        return null;
-    }
-
     public List<ChatRoom> getUserChatRooms(User user) {
         return data.chatRooms.values().stream().filter(n -> n.getMembers().contains(user))
                 .collect(Collectors.toList());
     }
 
-    public ChatRoom getChatRoomByName(String name) {
-        return data.chatRooms.get(name);
+    public boolean userExistsInChatRoom(String chatName, User user) {
+        List<ChatRoom> userChatRooms = getUserChatRooms(user);
+        for(ChatRoom room : userChatRooms) {
+            if(room.getName().equals(chatName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public void addRunningChat(ChatRoomHandler chatThread) {
-        this.runningChats.add(chatThread);
+    public void addToRunningChats(ChatClientThread client) {
+        this.runningChats.add(client);
     }
 
-    public ArrayList<ChatRoomHandler> getRunningChats() {
-        return runningChats;
+    public void sendToChatRoom(String message, String chatRoom, ChatClientThread senderThread) {
+        for(ChatClientThread clientThread : runningChats) {
+            //send message to all clients running the chatroom apart from the sender
+            if(clientThread.openChatRoom != null && clientThread.openChatRoom.equals(chatRoom) && clientThread != senderThread ) {
+                clientThread.output.println(message);
+            }
+        }
+    }
+
+    public void removeRunningChats(ChatClientThread client) {
+        this.runningChats.remove(client);
     }
 }
 

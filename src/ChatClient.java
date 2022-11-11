@@ -1,166 +1,194 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
-import java.util.ArrayList;
 
 public class ChatClient {
     private Socket socket;
-    private static BufferedReader input;
     private static BufferedReader userInput;
-    private static PrintWriter output;
+    private WriterThread writer;
+    private ListenerThread listener;
 
     private User user;
+    private boolean inChatRoom;
+    private Thread consoleListener;
 
     public ChatClient(Socket socket) {
+        this.socket = socket;
+        userInput = new BufferedReader(new InputStreamReader(System.in));
+
+        this.listener = new ListenerThread(socket, this);
+        this.writer = new WriterThread(socket, this);
+
+        new Thread(listener).start();
+        new Thread(writer).start();
+
+        loginMenu();
+        //TO REMOVE anna - just for testing my stuff plz ignore
+//        ServerData data = new ServerData();
+//        user = data.accounts.get("anna123");
+//        showMainMenu();
+    }
+
+    private void showMainMenu() {
         try {
-            this.socket = socket;
-            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            userInput = new BufferedReader(new InputStreamReader(System.in));
-            output = new PrintWriter(socket.getOutputStream(), true);
-
-            //loginMenu();
-            //TO REMOVE anna - just for testing my stuff plz ignore
-            ServerData data = new ServerData();
-            user = data.accounts.get("anna123");
-            mainMenu();
-
-        }
-        catch(IOException e) {
-            System.err.println("Could not connect to socket input and output streams.");
-        }
-        finally {
-            stop();
-        }
-    }
-
-    private void loginMenu() {
-        System.out.println("1. login");
-        System.out.println("2. register");
-        System.out.println("3. stop");
-        int choice = getUserOptionSelection(3, true);
-        switch (choice) {
-            case 1:
-                System.out.println("to do");
-                break;
-            case 2:
-                output.println(ServerRequest.REGISTER_USER);
-                break;
-            case 3:
-                System.out.println("to dooo");
-                break;
-        }
-    }
-
-    private int getUserOptionSelection(int limit, boolean allowEscape) {
-        int selection = -1;
-        //-1 indicates the input is unset or invalid
-        //0 indicates user has escaped the option selection
-        while(selection == -1) {
-            selection = getValidOptionSelectionFromInput(limit, allowEscape);
-        }
-        return selection;
-    }
-
-    private int getValidOptionSelectionFromInput(int limit, boolean allowEscape) {
-        System.out.print(">>>");
-        try {
-            //read user input
-            int selection = Integer.parseInt(userInput.readLine().trim());
-
-            if(allowEscape && selection == 0) {
-                return 0;
-            }
-            else if(selection < 0 || selection > limit){
-                System.out.println("Not a valid option, please enter a number between 1 and " + limit);
-                return -1;
-            }
-            else {
-                return selection;
-            }
-        }
-        catch(NumberFormatException e) {
-            System.out.println("Not a valid option, please enter a number");
-            return -1;
-        }
-        catch(IOException e) {
-            System.err.println("Failed to read user input");
-            return -1;
-        }
-    }
-
-    private void mainMenu() {
-        try {
+            System.out.println("1. view chat list");
+            System.out.println("2. enter chat");
+            System.out.println("3. create new chat");
+            System.out.println("4. view friends list");
+            System.out.println("5. edit profile");
+            System.out.println("6. logout");
             boolean logout = false;
-            while (!logout) {
-                System.out.println("1. view chat list");
-                System.out.println("2. create new chat");
-                System.out.println("3. view friends list");
-                System.out.println("4. logout");
-                int selection = getUserOptionSelection(4, false);
+            inChatRoom = false;
+            while (!logout && inChatRoom != true) {
+                int selection = getUserOptionSelection(6);
                 switch (selection) {
                     case 1:
                         viewChatList();
                         break;
                     case 2:
-                        System.out.println("To be implemented");
+                        enterChatRoom();
                         break;
                     case 3:
                         System.out.println("To be implemented");
                         break;
                     case 4:
+                        System.out.println("To be implemented");
+                        break;
+                    case 5:
+                        System.out.println("To be implemented");
+                        break;
+                    case 6:
+                        logout();
                         logout = true;
                         break;
                 }
             }
-        }
-        // thrown when a server is disconnected during a menu operation
-        catch (IOException e) {
-            System.err.println("Failed to fetch response from server. Please check connection.");
-        }
-        finally {
-            stop();
+        } catch (IOException e) {
+            System.err.println("Failed to read user input");
         }
     }
 
-    private void viewChatList() throws IOException {
-        output.println(ServerRequest.GET_CHATS);
-        // receives a comma separated list of chatroom names that the user is part of
-        String chats = input.readLine();
+    /*
+     * handle actions sent from the server
+     */
+    public void doServerAction(String request) {
+        if (request != null) {
+            if (request.startsWith("show chat list")) {
+                showChatList(request);
+            } else if (request.startsWith("run chat room")) {
+                runChatRoom();
+            } else if (request.contains("chat room invalid")) {
+                System.out.println("you are not part of this chat room");
+                showMainMenu();
+            } else {
+                System.out.println(request);
+            }
+        }
+    }
 
-        // if user is not part of any chat rooms.
-        if(chats == null || chats.equals("")) {
+    private void loginMenu() {
+        try {
+            System.out.println("1. login");
+            System.out.println("2. register");
+            System.out.println("3. stop");
+            int choice = getUserOptionSelection(3);
+            switch (choice) {
+                case 1:
+                    System.out.println("to do");
+                    break;
+                case 2:
+                    System.out.println("to do");
+                    break;
+                case 3:
+                    System.out.println("to do");
+                    break;
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to read user input");
+        }
+    }
+
+    private int getUserOptionSelection(int limit) throws IOException {
+        int selection = -1;
+        while (selection == -1) {
+            selection = getValidOptionSelectionFromInput(limit);
+        }
+        return selection;
+    }
+
+    private int getValidOptionSelectionFromInput(int limit) throws IOException {
+        try {
+            //read user input
+            int selection = Integer.parseInt(userInput.readLine().trim());
+
+            if (selection < 1 || selection > limit) {
+                System.out.println("Not a valid option, please enter a number between 1 and " + limit);
+                return -1;
+            } else {
+                return selection;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Not a valid option, please enter a number");
+            return -1;
+        }
+    }
+
+    private void viewChatList() {
+        writer.queueAction("view chat list");
+    }
+
+    private void showChatList(String list) {
+        list = list.replace("show chat list: ", "");
+        if (list.equals("")) {
             System.out.println("You aren't currently part of any chat rooms.");
             return;
         }
 
-        String[] chatNames = chats.split(",");
-        for(int i = 1; i < chatNames.length + 1; i++) {
-            System.out.println(i + ". " + chatNames[i-1]);
-        }
-
-        System.out.println("Enter the number of the chat you would like to enter or 0 to return to main menu.");
-        int selection = getUserOptionSelection(chatNames.length, true);
-
-        if(selection != 0) {
-            output.println(ServerRequest.OPEN_CHAT_ROOM);
-            output.println(chatNames[selection-1]);
-
-            System.out.println("Room window running, please exit to return to main app.");
-
-            new ChatRoomWindow(chatNames[selection-1], socket, user);
-            //while chat open
-            //listen and
+        String[] chatNames = list.split(",");
+        for (int i = 1; i < chatNames.length + 1; i++) {
+            System.out.println(i + ". " + chatNames[i - 1]);
         }
     }
 
-    private static void stop() {
-        try {
-            output.println(ServerRequest.STOP);
-            output.close();
-            input.close();
+    private void enterChatRoom() throws IOException {
+        inChatRoom = true;
+        System.out.println("enter the name of the chat you would like to enter:");
+        String chatName = userInput.readLine();
+        writer.queueAction("enter chat room:" + chatName);
+    }
+
+    private void runChatRoom() {
+        System.out.println("chat room entered");
+        System.out.println("type a message or x to exit");
+
+        consoleListener = new ConsoleListenerThread(socket, this, userInput);
+        consoleListener.start();
+    }
+
+    public void sendMessage(String input) {
+        if (input != null) {
+            if (input.equals("x")) {
+                consoleListener.interrupt();
+                writer.queueAction("exit chat room");
+            } else {
+                writer.queueAction("send message:" + user.getName() + ": " + input);
+            }
         }
-        catch(IOException e) {
-            System.err.println("Could not close input or output stream.");
-            e.printStackTrace();
+    }
+
+    private void logout() {
+        writer.queueAction("logout");
+        stop();
+    }
+
+    private void stop() {
+        writer.stop();
+        listener.stop();
+        try {
+            socket.close();
+        } catch (IOException e) {
+            System.err.println("Failed to close socket connection: " + e.getMessage());
         }
     }
 }
