@@ -40,5 +40,4 @@ public class ServerData {
         accounts.put(account.getUsername(), account);
         System.out.println(accounts);
     }
-
 }

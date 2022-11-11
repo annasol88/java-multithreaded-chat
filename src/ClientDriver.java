@@ -8,13 +8,13 @@ import java.net.UnknownHostException;
  */
 public class ClientDriver {
     // get these from args (?)
-    private static final int PORT = 9876;
+    private static final int PORT = 6969;
     private static final String SERVER_IP = "localhost";
 
     public static void main(String[] args) {
         try {
             Socket socket = new Socket(SERVER_IP, PORT);
-            new ChatClient(socket);
+            ChatClient c = new ChatClient(socket);
         }
         catch(UnknownHostException e) {
             System.err.println("Unknown host, please re-verify, try again.");

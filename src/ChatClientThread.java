@@ -8,10 +8,11 @@ import java.util.List;
 public class ChatClientThread implements Runnable {
     private Socket socket;
     private ChatServer server;
-    private BufferedReader input;
-    private PrintWriter output;
+    BufferedReader input;
+    PrintWriter output;
     // User currently logged into the client
     private User user;
+    String openChatRoom;
 
     public ChatClientThread(Socket socket, ChatServer server) {
         try {
@@ -32,22 +33,20 @@ public class ChatClientThread implements Runnable {
     @Override
     public void run() {
         try {
-            ServerRequest request = null;
-            while (request != ServerRequest.STOP) {
-                request = ServerRequest.valueOf(input.readLine());
-                switch(request) {
-                    case REGISTER_USER:
-                        registerUser();
-                        break;
-                    case GET_CHATS:
-                        getChatRoomNames();
-                        break;
-                    case OPEN_CHAT_ROOM:
-                        openChatRoom();
-                        break;
-                    case STOP:
-                        stop();
-                        break;
+            String request = "";
+            while (!request.equals("logout")) {
+                request = input.readLine();
+                if(request.startsWith("view chat list")) {
+                    getChatRoomNames();
+                }
+                else if (request.startsWith("enter chat room")) {
+                    enterChatRoom(request);
+                }
+                else if(request.startsWith("send message")) {
+                    sendMessageToChat(request);
+                }
+                else if(request.startsWith("exit chat room")) {
+                    exitChatRoom();
                 }
             }
         } catch(IOException e) {
@@ -68,28 +67,34 @@ public class ChatClientThread implements Runnable {
         }
     }
 
-    private void loginUser(String username, String password) {
-        //example server request
-        user = server.loginUser(username, password);
-    }
-
-    private void registerUser() throws IOException {
-        server.registerUser();
-    }
-
-
     private void getChatRoomNames() {
         List<ChatRoom> chats = server.getUserChatRooms(user);
         StringBuilder chatsString = new StringBuilder();
         for(ChatRoom chat: chats) {
             chatsString.append(chat.getName()).append(",");
         }
-        output.println(chatsString);
+        output.println("show chat list: " + chatsString);
     }
 
-    private void openChatRoom() throws IOException {
-        String name = input.readLine();
-        ChatRoom roomToOpen = server.getChatRoomByName(name);
-        new ChatRoomThread(socket, roomToOpen, user);
+    private void enterChatRoom(String request) {
+        String chatRoomName = request.replace("enter chat room:", "").trim();
+        if(server.userExistsInChatRoom(chatRoomName, user)) {
+            openChatRoom = chatRoomName;
+            server.addToRunningChats(this);
+            output.println("run chat room");
+        }
+        else {
+            output.println("chat room invalid");
+        }
+    }
+
+    private void sendMessageToChat(String request) {
+        String message = request.replace("send message:", "").trim();
+        server.sendToChatRoom(message, openChatRoom, this);
+    }
+
+    private void exitChatRoom() {
+        openChatRoom = null;
+        server.removeRunningChats(this);
     }
 }
