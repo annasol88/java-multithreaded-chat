@@ -15,9 +15,9 @@ public class ServerData {
         accounts = new ConcurrentHashMap<>();
         admins = new ConcurrentHashMap<>();
 
-        User anna = new User("anna", "software developer", "anna123", "123", new ArrayList<>());
-        User emma = new User("emma", "software developer", "emma123", "123", new ArrayList<>());
-        User alex = new User("alex", "software developer", "alex123", "123", new ArrayList<>());
+        User anna = new User("anna", "software developer", "anna123", "123");
+        User emma = new User("emma", "software developer", "emma123", "123");
+        User alex = new User("alex", "software developer", "alex123", "123");
 
         accounts.put(anna.getUsername(), anna);
         accounts.put(alex.getUsername(), alex);
@@ -30,14 +30,5 @@ public class ServerData {
         chat2Members.put(alex.getUsername(), alex);
 
         chatRooms.put("chat y", new ChatRoom("chat y", chat2Members));
-    }
-
-    public ConcurrentHashMap<String, User> getAccounts() {
-        return accounts;
-    }
-
-    public void addAccount(User account) {
-        accounts.put(account.getUsername(), account);
-        System.out.println(accounts);
     }
 }

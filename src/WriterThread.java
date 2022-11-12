@@ -5,14 +5,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WriterThread implements Runnable {
     private PrintWriter writer;
-    private Socket socket;
-    private ChatClient client;
     private ConcurrentLinkedQueue<String> requestQueue;
     private boolean stopped = false;
 
-    public WriterThread(Socket socket, ChatClient client) {
-        this.socket = socket;
-        this.client = client;
+    public WriterThread(Socket socket) {
         this.requestQueue = new ConcurrentLinkedQueue<>();
 
         try {
@@ -23,7 +19,7 @@ public class WriterThread implements Runnable {
         }
     }
 
-    public void queueAction(String request) {
+    public void sendRequest(String request) {
         requestQueue.add(request);
     }
 
@@ -36,12 +32,7 @@ public class WriterThread implements Runnable {
     }
 
     public void stop() {
-        try {
-            this.stopped = true;
-            socket.close();
-        } catch (IOException ex) {
-
-            System.out.println("Server Connection Lost: " + ex.getMessage());
-        }
+        this.stopped = true;
+        writer.close();
     }
 }

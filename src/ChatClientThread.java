@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
 
 /*
@@ -10,6 +12,7 @@ public class ChatClientThread implements Runnable {
     private ChatServer server;
     BufferedReader input;
     PrintWriter output;
+
     // User currently logged into the client
     private User user;
     String openChatRoom;
@@ -22,7 +25,7 @@ public class ChatClientThread implements Runnable {
             output = new PrintWriter(socket.getOutputStream(), true);
 
             //TO REMOVE anna - for testing with a logged in user
-            //user = ServerData.accounts.get("anna123");
+            user = ServerData.accounts.get("anna123");
         }
         catch(IOException e) {
             System.err.println("Failed to connect to socket input and output stream.");
@@ -34,7 +37,7 @@ public class ChatClientThread implements Runnable {
     public void run() {
         try {
             String request = "";
-            while (!request.equals("logout")) {
+            while (!request.equals("stop")) {
                 request = input.readLine();
                 if(request.startsWith("view chat list")) {
                     getChatRoomNames();
@@ -47,6 +50,9 @@ public class ChatClientThread implements Runnable {
                 }
                 else if(request.startsWith("exit chat room")) {
                     exitChatRoom();
+                }
+                else if(request.startsWith("view friends list")) {
+                    getFriendList();
                 }
             }
         } catch(IOException e) {
@@ -70,10 +76,10 @@ public class ChatClientThread implements Runnable {
     private void getChatRoomNames() {
         List<ChatRoom> chats = server.getUserChatRooms(user);
         StringBuilder chatsString = new StringBuilder();
-        for(ChatRoom chat: chats) {
+        for (ChatRoom chat : chats) {
             chatsString.append(chat.getName()).append(",");
         }
-        output.println("show chat list: " + chatsString);
+        output.println("show chat list:" + chatsString);
     }
 
     private void enterChatRoom(String request) {
@@ -90,7 +96,19 @@ public class ChatClientThread implements Runnable {
 
     private void sendMessageToChat(String request) {
         String message = request.replace("send message:", "").trim();
-        server.sendToChatRoom(message, openChatRoom, this);
+        if(!message.equals("")) {
+            message = user.getName() + ": " + message;
+            server.sendToChatRoom(message, openChatRoom, this);
+        }
+    }
+
+    private void getFriendList() {
+        Collection<User> friends = user.getFriends();
+        StringBuilder friendsString = new StringBuilder();
+        for (User friend : friends) {
+            friendsString.append(friend.getName()).append(",");
+        }
+        output.println("show friends list:" + friendsString);
     }
 
     private void exitChatRoom() {
