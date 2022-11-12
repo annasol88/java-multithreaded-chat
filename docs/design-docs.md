@@ -27,7 +27,7 @@ concurrentLinkedQueue. (more on this below)
 to be handled. This is essential to solve our final blocking issue with listening to System.in, hence allowing messages 
 from the server (or other users in a chatroom) to not get blocked because the ChatClient is waiting for user input. 
 
-##Synchronization Issues 
+## Synchronization Issues 
 #### ConcurrentHashmaps to store data
 Our application uses the Java Util Concurrent Hashmap to store:
 - chat rooms in a server
@@ -35,7 +35,6 @@ Our application uses the Java Util Concurrent Hashmap to store:
 - friends list on a User object
 
 This is the cleanest implementation we could find to store data that should be accessed synchronously.
-
 From our understanding of the Java Docs a ConcurrentHashmap allows any number of threads to perform 
 retrieval operation at any given time, and for update/add/remove operations the thread must lock the particular 
 segment in which the thread wants to operate, allowing these operations to be done safely. 
@@ -47,13 +46,13 @@ running a chatroom and iterates through them to send messages to active users.
 This is implemented as a synchronized list and is synchronized when being traversed to ensure thread 
 safety between clients leaving and joining a chatroom.
 
-##Deadlocks
+## Deadlocks
 write concurrentLinkedQueue
 //TODO
 
 ## ThreadPool
 
-##IO Streams
+## IO Streams
 #### Reasoning for choosing the following IO stream objects
 PrintWriter - Unlike BufferedReader and allows auto-flush for every println/print/write which
 removes the need to manually call the flush() method each time data is written.
@@ -62,7 +61,7 @@ need to manually do this also.
  
 BufferedReader - A fast and efficient implementation for reading Strings from an input stream.
 
-##Considerations
+## Considerations
 #### Some considerations for future.
 Improving message passing to use Enumerated string or schemas to remove coupling between our 
 communication streams will improve readability and human error.  
