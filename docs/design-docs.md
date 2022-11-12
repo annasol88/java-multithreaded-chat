@@ -1,41 +1,75 @@
 # Design Documentation
 
-## Thread safety
-The application implements 3 Runnable Object types. 
-1. The server which runs on its own thread, and maintains a threadpool responsible for scheduling
-the client and chat threads submitted to it.
+## Use of threads
 
-2. The ChatClientThread, which runs a separate thread for each client currently using the application, that listens to
-the client requests and returns relevant data from the server. 
+#### The application uses several threads to handle the necessary functionality.
 
-3. The ChatRoomHandler, which runs a separate thread for each chat window a logged-in client has open.
-This thread listens to incoming messages from other chat users allowing thread safety between messages sent and received in the chat.
+1. The ChatServer itself runs on a thread, dedicated to listening to new socket connections 
+in the form of clients running the app and adding those client threads to a thread pool. 
+This allows server operations to not be blocked by the serverSocket.accept().
 
+2. When a new client (ChatClient) is ran it creates a new socket that connects to the ChatServer submitting a new 
+ChatClientThread to the thread pool. Each ChatClientThread is responsible for listening to requests sent 
+from the client over a socket input stream and responding to them via the socket output stream.
 
-##Synchronization issues 
-###login
-###chat
+#### The ChatClient when created, runs its own 3 sub-threads that do the following:
+
+1. ListenerThread - dedicated to listening to the socket input stream (receiving messages from the server) 
+and invoking the appropriate responses in the client. Having this on a separate thread prevents the 
+readLine() function on the input stream from blocking other client operations.
+
+2. WriterThread - dedicated to queuing client requests and sending them to the socket output stream 
+(sending messages to the server). In theory, the writer doesn't need to run on a separate thread however 
+with this implementation we can mitigate potential for synchronization or deadlock issues by scheduling client requests in a 
+concurrentLinkedQueue. (more on this below)
+
+5.ConsoleListenerThread - dedicated to listening to user input from the command line and sending it back to the client 
+to be handled. This is essential to solve our final blocking issue with listening to System.in, hence allowing messages 
+from the server (or other users in a chatroom) to not get blocked because the ChatClient is waiting for user input. 
+
+##Synchronization Issues 
+#### ConcurrentHashmaps to store data
+Our application uses the Java Util Concurrent Hashmap to store:
+- chat rooms in a server
+- accounts in a server
+- friends list on a User object
+
+This is the cleanest implementation we could find to store data that should be accessed synchronously.
+
+From our understanding of the Java Docs a ConcurrentHashmap allows any number of threads to perform 
+retrieval operation at any given time, and for update/add/remove operations the thread must lock the particular 
+segment in which the thread wants to operate, allowing these operations to be done safely. 
+This also removes the need for manually synchronizing methods and data objects when using them. 
+
+#### Client thread synchronizedList
+For chat messaging functionality, the server stores a list to reference all the clients currently 
+running a chatroom and iterates through them to send messages to active users. 
+This is implemented as a synchronized list and is synchronized when being traversed to ensure thread 
+safety between clients leaving and joining a chatroom.
 
 ##Deadlocks
+write concurrentLinkedQueue
+//TODO
+
+## ThreadPool
 
 ##IO Streams
-printWriter is used as an output stream between our client and client handler
-since this allows auto-flush which is what we need whenever messages are sent.
+#### Reasoning for choosing the following IO stream objects
+PrintWriter - Unlike BufferedReader and allows auto-flush for every println/print/write which
+removes the need to manually call the flush() method each time data is written.
+The println operation also adds a /n (new line) exit character to strings written, which removes the
+need to manually do this also.
+ 
+BufferedReader - A fast and efficient implementation for reading Strings from an input stream.
 
-## Client Server Communication
-The client server connection is implemented using a threadpool and exec service...
-Since the number of threads in our application will be dynamic depending on the 
-number of clients connected to the server; the thread pool is implemented as a newCachedThreadPool
-since this allows threads to be created as required and reused when they become available.
+##Considerations
+#### Some considerations for future.
+Improving message passing to use Enumerated string or schemas to remove coupling between our 
+communication streams will improve readability and human error.  
 
-
-## User Interface
-User Interface is implemented as a console application. //TODO
+missing functionality - 
 
 ## Scalability
-The Thread pool accepts multiple clients connecting to it.
-The server also supports multiple chatrooms
-The ClientDriver Class allows multiple clients to be run on the same machine to allow testing.
 ...//TODO
 
 ## Modularity

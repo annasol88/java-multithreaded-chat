@@ -4,7 +4,7 @@ public class ServerDriver {
     private static final String SERVER_IP = "localhost";
 
     public static void main(String[] args) {
-        ChatServer server = new ChatServer(PORT, SERVER_IP);
+        ChatServer server = new ChatServer(PORT);
         new Thread(server).start();
     }
 }

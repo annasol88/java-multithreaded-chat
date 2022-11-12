@@ -26,7 +26,7 @@ public class ListenerThread implements Runnable {
         try {
             while (!stopped) {
                 String request = reader.readLine();
-                client.doServerAction(request);
+                handleServerInput(request);
             }
         } catch (IOException ex) {
             System.err.println("Server connection lost: " + ex.getMessage());
@@ -39,6 +39,24 @@ public class ListenerThread implements Runnable {
             reader.close();
         } catch (IOException ex) {
             System.out.println("Error writing to server: " + ex.getMessage());
+        }
+    }
+
+    private void handleServerInput(String request) {
+        if (request != null) {
+            if (request.startsWith("show chat list")) {
+                client.showChatList(request);
+            } else if (request.startsWith("run chat room")) {
+                client.runChatRoom();
+            } else if (request.contains("chat room invalid")) {
+                client.showInvalidChatRoomName();
+            } else if (request.contains("exit chat room")) {
+                client.showMainMenu();
+            } else if (request.startsWith("show friends list")) {
+                client.showFriendsList(request);
+            } else {
+                client.print(request);
+            }
         }
     }
 }

@@ -1,4 +1,6 @@
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class User {
     private final String name;
@@ -7,14 +9,14 @@ public class User {
     private final String password;
     private boolean isLoggedIn;
 
-    private ArrayList<User> friends;
+    private final ConcurrentHashMap<String, User> friends;
 
-    public User(String name, String bio, String username, String password, ArrayList<User> friends) {
+    public User(String name, String bio, String username, String password) {
         this.name = name;
         this.bio = bio;
         this.username = username;
         this.password = password;
-        this.friends = friends;
+        this.friends = new ConcurrentHashMap<>();
         this.isLoggedIn = false;
     }
 
@@ -36,6 +38,18 @@ public class User {
 
     public String getPassword() {
         return password;
+    }
+
+    public Collection<User> getFriends() {
+        return friends.values();
+    }
+
+    public Enumeration<String> getFriendUserNames() {
+        return friends.keys();
+    }
+
+    public void addFriend(User user) {
+        friends.put(user.getUsername(), user);
     }
 
     public void setLoggedIn(boolean loggedIn) {

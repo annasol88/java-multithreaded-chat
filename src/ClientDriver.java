@@ -14,7 +14,7 @@ public class ClientDriver {
     public static void main(String[] args) {
         try {
             Socket socket = new Socket(SERVER_IP, PORT);
-            ChatClient c = new ChatClient(socket);
+            new ChatClient(socket);
         }
         catch(UnknownHostException e) {
             System.err.println("Unknown host, please re-verify, try again.");
