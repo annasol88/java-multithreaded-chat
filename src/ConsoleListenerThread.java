@@ -1,6 +1,5 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.Socket;
 
 public class ConsoleListenerThread implements Runnable {
     private ChatClient client;
@@ -14,14 +13,14 @@ public class ConsoleListenerThread implements Runnable {
 
     @Override
     public void run() {
-        while (!stopped){
-            try {
+        try {
+            while (!stopped) {
                 String input = userInput.readLine();
                 handleUserInput(input);
             }
-            catch (IOException e) {
-                System.err.println("failed to read user input");
-            }
+        } catch (IOException e) {
+            System.err.println("Failed to read user input");
+            client.stop();
         }
     }
 
@@ -29,25 +28,57 @@ public class ConsoleListenerThread implements Runnable {
         try {
             this.stopped = true;
             this.userInput.close();
-        } catch (IOException ex) {
-
-            System.out.println("Server Connection Lost: " + ex.getMessage());
+        } catch (IOException e) {
+            System.out.println("Failed closing user input stream: " + e.getMessage());
         }
     }
 
     private void handleUserInput(String input) {
-        switch(client.currentScreen) {
-            case LOGIN:
+        switch (client.currentScreen) {
+            case LOGIN_MENU:
                 client.handleLoginMenuSelection(input);
                 break;
-            case MAIN:
+            case LOGIN_ENTERING_USERNAME:
+                client.loginUsernameEnteredGetPassword(input);
+                break;
+            case LOGIN_ENTERING_PASSWORD:
+                client.loginSendRequest(input);
+                break;
+            case REGISTER_ENTERING_USERNAME:
+                client.registerUsernameEntered(input);
+                break;
+            case REGISTER_ENTERING_PASSWORD:
+                client.registerPasswordEnteredGetName(input);
+                break;
+            case REGISTER_ENTERING_NAME:
+                client.registerNameEnteredGetBio(input);
+                break;
+            case REGISTER_ENTERING_BIO:
+                client.registerSendRequest(input);
+                break;
+            case MAIN_MENU:
                 client.handleMainMenuSelection(input);
                 break;
-            case CHATROOM:
-                client.sendMessageToChat(input);
+            case CHATROOM_OPTION_MENU:
+                client.handleChatRoomOptionMenuSelection(input);
                 break;
-            case ENTERING_CHATROOM:
-                client.enterChatRoom(input);
+            case CHAT_MEMBER_OPTION_MENU:
+                client.handleChatMemberOptionMenuSelection(input);
+                break;
+            case ENTERING_CHAT_NAME:
+                client.chatRoomNameEntered(input);
+                break;
+            case ENTERING_CHAT_MEMBER_NAME:
+                client.chatMemberNameEntered(input);
+                break;
+            case FRIEND_REQUEST_MENU:
+                client.handleFriendRequestOptionMenuSelection(input);
+                break;
+            case ENTERING_FRIEND_REQUEST_NAME:
+                client.friendRequestNameEntered(input);
+                break;
+            case CHATTING:
+                client.chatRoomSendMessage(input);
                 break;
         }
     }

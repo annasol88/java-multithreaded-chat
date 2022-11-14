@@ -23,9 +23,10 @@ readLine() function on the input stream from blocking other client operations.
 with this implementation we can mitigate potential for synchronization or deadlock issues by scheduling client requests in a 
 concurrentLinkedQueue. (more on this below)
 
-5.ConsoleListenerThread - dedicated to listening to user input from the command line and sending it back to the client 
+3. ConsoleListenerThread - dedicated to listening to user input from the command line and sending it back to the client 
 to be handled. This is essential to solve our final blocking issue with listening to System.in, hence allowing messages 
 from the server (or other users in a chatroom) to not get blocked because the ChatClient is waiting for user input. 
+
 
 ## Synchronization Issues 
 #### ConcurrentHashmaps to store data
@@ -47,8 +48,11 @@ This is implemented as a synchronized list and is synchronized when being traver
 safety between clients leaving and joining a chatroom.
 
 ## Deadlocks
+
+#### Attempts in the design were made to remediate the possibility of deadlocks
 write concurrentLinkedQueue
-//TODO
+login split into 2 parts
+
 
 ## ThreadPool
 
@@ -63,8 +67,11 @@ BufferedReader - A fast and efficient implementation for reading Strings from an
 
 ## Considerations
 #### Some considerations for future.
-Improving message passing to use Enumerated string or schemas to remove coupling between our 
+Improvements could be made to message passing to use Enumerated string or schemas to remove coupling between our 
 communication streams will improve readability and human error.  
+
+Improvements could be made to the number of server requests done
+
 
 missing functionality - 
 
