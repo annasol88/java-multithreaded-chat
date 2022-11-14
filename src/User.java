@@ -1,5 +1,4 @@
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class User {
@@ -11,12 +10,15 @@ public class User {
 
     private final ConcurrentHashMap<String, User> friends;
 
+    private final ConcurrentHashMap<String, User> pendingFriendRequest;
+
     public User(String name, String bio, String username, String password) {
         this.name = name;
         this.bio = bio;
         this.username = username;
         this.password = password;
         this.friends = new ConcurrentHashMap<>();
+        this.pendingFriendRequest = new ConcurrentHashMap<>();
         this.isLoggedIn = false;
     }
 
@@ -44,12 +46,20 @@ public class User {
         return friends.values();
     }
 
-    public Enumeration<String> getFriendUserNames() {
-        return friends.keys();
+    public Collection<User> getPendingFriendRequests() {
+        return pendingFriendRequest.values();
     }
 
     public void addFriend(User user) {
         friends.put(user.getUsername(), user);
+    }
+
+    public void addFriendRequest(User user) {
+        pendingFriendRequest.put(user.getUsername(), user);
+    }
+
+    public void removeFriendRequest(User user) {
+        pendingFriendRequest.remove(user.getUsername());
     }
 
     public void setLoggedIn(boolean loggedIn) {

@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class WriterThread implements Runnable {
     private PrintWriter writer;
     private ConcurrentLinkedQueue<String> requestQueue;
-    private boolean stopped = false;
 
     public WriterThread(Socket socket) {
         this.requestQueue = new ConcurrentLinkedQueue<>();
@@ -24,15 +23,20 @@ public class WriterThread implements Runnable {
     }
 
     public void run() {
-        while (!stopped){
+        while (true) {
             if(!requestQueue.isEmpty()) {
-                writer.println(requestQueue.poll());
+                String request = requestQueue.poll();
+                writer.println(request);
+
+                if(request.equals("stop")) {
+                    stop();
+                    break;
+                }
             }
         }
     }
 
     public void stop() {
-        this.stopped = true;
         writer.close();
     }
 }
