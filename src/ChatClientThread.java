@@ -34,51 +34,56 @@ public class ChatClientThread implements Runnable {
         try {
             String request = "";
             while (!request.equals("stop")) {
-                request = input.readLine().toLowerCase().trim();
-                if (request.startsWith("login")) {
-                    login(request);
-                } else if (request.startsWith("check username free")) {
-                    checkUsernameFree(request);
-                }  else if (request.startsWith("register user")) {
-                    registerUserAndLogin(request);
-                } else if (request.startsWith("view chat list")) {
+                request = input.readLine();
+                String header = Utils.getRequestHeader(request);
+                String[] params = Utils.getRequestParams(request);
+
+                if (header.equals("login")) {
+                    login(params);
+                } else if (header.equals("check username free")) {
+                    checkUsernameFree(params[0]);
+                } else if (header.equals("register user")) {
+                    registerUserAndLogin(params);
+                } else if (header.equals("view chat list")) {
                     getChatRoomNames();
-                } else if (request.startsWith("check chat exists")) {
-                    validateChatExistsForUser(request);
-                } else if (request.startsWith("view chat members")) {
-                    viewChatRoomMembers(request);
-                } else if (request.startsWith("check chat member exists")) {
-                    validateMemberExistsInChatRoom(request);
-                } else if (request.startsWith("send friend request")) {
-                    sendFriendRequest(request);
-                } else if (request.startsWith("view profile")) {
-                    getUserProfile(request);
-                }else if (request.startsWith("enter chat room")) {
-                    enterChatRoom(request);
-                } else if (request.startsWith("send message")) {
-                    sendMessageToChat(request);
-                } else if (request.startsWith("close chat room")) {
+                } else if (header.equals("check chat exists")) {
+                    validateChatExistsForUser(params[0]);
+                } else if (header.equals("view chat members")) {
+                    viewChatRoomMembers(params[0]);
+                } else if (header.equals("check chat member exists")) {
+                    validateMemberExistsInChatRoom(params);
+                } else if (header.equals("send friend request")) {
+                    sendFriendRequest(params[0]);
+                } else if (header.equals("view profile")) {
+                    getUserProfile(params[0]);
+                } else if (header.equals("enter chat room")) {
+                    enterChatRoom(params[0]);
+                } else if (header.equals("send message")) {
+                    sendMessageToChat(params[0]);
+                } else if (header.equals("close chat room")) {
                     exitChatRoom();
-                } else if (request.startsWith("leave chat room")) {
-                    leaveChatRoom(request);
-                } else if (request.startsWith("view friends list")) {
+                } else if (header.equals("leave chat room")) {
+                    leaveChatRoom(params[0]);
+                } else if (header.equals("view friends list")) {
                     getFriendList();
-                } else if (request.startsWith("view friend requests")) {
+                } else if (header.equals("view friend requests")) {
                     getFriendRequests();
-                } else if (request.startsWith("check friend request exists")) {
-                    checkFriendRequestExists(request);
-                } else if (request.startsWith("accept friend request")) {
-                    acceptFriendRequest(request);
-                } else if (request.startsWith("deny friend request")) {
-                    denyFriendRequest(request);
-                } else if (request.startsWith("view own profile")) {
+                } else if (header.equals("check friend request exists")) {
+                    checkFriendRequestExists(params[0]);
+                } else if (header.equals("accept friend request")) {
+                    acceptFriendRequest(params[0]);
+                } else if (header.equals("deny friend request")) {
+                    denyFriendRequest(params[0]);
+                } else if (header.equals("view own profile")) {
                     viewOwnProfile();
-                }  else if (request.startsWith("edit profile name")) {
-                    viewOwnProfile();
-                } else if (request.startsWith("edit profile bio")) {
-                    viewOwnProfile();
-                } else if (request.startsWith("logout")) {
+                } else if (header.equals("edit profile name")) {
+                    editProfileName(params[0]);
+                } else if (header.equals("edit profile bio")) {
+                    editProfileBio(params[0]);
+                } else if (header.equals("logout")) {
                     logout();
+                } else {
+                    output.println("Error: request not recognised: " + request);
                 }
             }
         } catch (IOException e) {
@@ -103,9 +108,7 @@ public class ChatClientThread implements Runnable {
         }
     }
 
-    private void login(String request) {
-        String s = request.replace("login:", "").trim();
-        String[] credentials = s.split(",");
+    private void login(String[] credentials) {
         String username = credentials[0];
         String password = credentials[1];
 
@@ -123,23 +126,19 @@ public class ChatClientThread implements Runnable {
         output.println("already logged in");
     }
 
-    private void checkUsernameFree(String request) {
-        String username = request.replace("check username free:", "").trim();
+    private void checkUsernameFree(String username) {
         if (server.loginSaveUsernameIfFree(username)) {
             output.println("register username free");
             return;
         }
-
         output.println("register username taken");
     }
 
-    private void registerUserAndLogin(String request) {
-        request = request.replace("register user:", "").trim();
-        String[] params = request.split(",");
-        String username = params[0];
-        String password = params[1];
-        String name = params[2];
-        String bio = params[3];
+    private void registerUserAndLogin(String[] account) {
+        String username = account[0];
+        String password = account[1];
+        String name = account[2];
+        String bio = account[3];
 
         User user = new User(name, bio, username, password);
 
@@ -157,19 +156,16 @@ public class ChatClientThread implements Runnable {
         output.println("show chat list:" + chatsString);
     }
 
-    private void validateChatExistsForUser(String request) {
-        String chatRoomName = request.replace("check chat exists:", "").trim();
-
-        if (server.chatRoomExists(chatRoomName) && server.isUserMemberOfChatroom(chatRoomName, currentUser.getUsername())) {
+    private void validateChatExistsForUser(String chatName) {
+        if (server.chatRoomExists(chatName) && server.isUserMemberOfChatroom(chatName, currentUser.getUsername())) {
             output.println("chat room exists");
         } else {
             output.println("chat room invalid");
         }
     }
 
-    private void viewChatRoomMembers(String request) {
-        String chatRoomName = request.replace("view chat members:", "").trim();
-        Collection<User> members = server.getChatRoomMembers(chatRoomName);
+    private void viewChatRoomMembers(String chatName) {
+        Collection<User> members = server.getChatRoomMembers(chatName);
         StringBuilder chatsString = new StringBuilder();
         for (User member : members) {
             chatsString.append(member.getUsername()).append(",");
@@ -177,9 +173,7 @@ public class ChatClientThread implements Runnable {
         output.println("show chat room members:" + chatsString);
     }
 
-    private void validateMemberExistsInChatRoom(String request) {
-        request = request.replace("check chat member exists:", "").trim();
-        String[] params = request.split(",");
+    private void validateMemberExistsInChatRoom(String[] params) {
         String chatRoom = params[0];
         String username = params[1];
 
@@ -190,43 +184,44 @@ public class ChatClientThread implements Runnable {
         }
     }
 
-    private void sendFriendRequest(String request) {
-        String username = request.replace("send friend request:", "").trim();
-        if(username.equals(currentUser.getUsername())) {
+    private void sendFriendRequest(String requestUsername) {
+        if (requestUsername.equals(currentUser.getUsername())) {
             output.println("cannot friend request yourself");
             return;
         }
-        if(server.sendFriendRequest(username, currentUser)){
+        if (server.sendFriendRequest(requestUsername, currentUser)) {
             output.println("friend request sent");
             return;
         }
         output.println("already friends");
     }
 
-    private void getUserProfile(String request) {
-        String username = request.replace("view profile:", "").trim();
+    private void getUserProfile(String username) {
         User user = server.getAccountByUsername(username);
         String userString = user.getUsername() + "," + user.getName() + "," + user.getBio();
         output.println("show profile:" + userString);
     }
 
-    private void enterChatRoom(String request) {
-        openChatRoom = request.replace("enter chat room:", "").trim();
+    private void enterChatRoom(String chatName) {
+        openChatRoom = chatName;
         server.addToRunningChats(this);
         output.println("run chat room");
     }
 
-    private void leaveChatRoom(String request) {
-        String chatName = request.replace("leave chat room:", "").trim();
-        server.leaveChatRoom(chatName, currentUser.getUsername());
-    }
-
-    private void sendMessageToChat(String request) {
-        String message = request.replace("send message:", "").trim();
+    private void sendMessageToChat(String message) {
         if (!message.equals("")) {
             message = currentUser.getName() + ": " + message;
             server.sendToChatRoom(message, openChatRoom, this);
         }
+    }
+
+    private void exitChatRoom() {
+        openChatRoom = null;
+        server.removeRunningChats(this);
+    }
+
+    private void leaveChatRoom(String chatName) {
+        server.leaveChatRoom(chatName, currentUser.getUsername());
     }
 
     private void getFriendList() {
@@ -247,23 +242,19 @@ public class ChatClientThread implements Runnable {
         output.println("show friend request list:" + friendsString);
     }
 
-    private void checkFriendRequestExists(String request) {
-        String username = request.replace("check friend request exists:", "").trim();
-        if(server.accountExists(username) && currentUser.getPendingFriendRequests().contains(server.getAccountByUsername(username))) {
+    private void checkFriendRequestExists(String requestUsername) {
+        if (server.accountExists(requestUsername) && currentUser.getPendingFriendRequests().contains(server.getAccountByUsername(requestUsername))) {
             output.println("friend request exists");
-        }
-        else {
+        } else {
             output.println("friend request invalid");
         }
     }
 
-    private void acceptFriendRequest(String request) {
-        String username = request.replace("accept friend request:", "").trim();
+    private void acceptFriendRequest(String username) {
         server.acceptFriendRequest(username, currentUser);
     }
 
-    private void denyFriendRequest(String request) {
-        String username = request.replace("deny friend request:", "").trim();
+    private void denyFriendRequest(String username) {
         server.removeFriendRequest(username, currentUser);
     }
 
@@ -271,24 +262,16 @@ public class ChatClientThread implements Runnable {
         output.println("show own profile:" + currentUser.getName() + "," + currentUser.getBio());
     }
 
-    private void editProfileName(String request) {
-        String name = request.replace("edit profile name:", "").trim();
+    private void editProfileName(String name) {
         server.editAccountName(currentUser, name);
     }
 
-    private void editProfileBio(String request) {
-        String bio = request.replace("edit profile bio:", "").trim();
+    private void editProfileBio(String bio) {
         server.editAccountBio(currentUser, bio);
-    }
-
-    private void exitChatRoom() {
-        openChatRoom = null;
-        server.removeRunningChats(this);
     }
 
     private void logout() {
         server.logoutUser(currentUser);
         currentUser = null;
     }
-
 }

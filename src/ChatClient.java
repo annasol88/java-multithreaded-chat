@@ -84,6 +84,15 @@ public class ChatClient {
         System.out.println("3. return to main menu");
     }
 
+    public void showFriendListOptionMenu() {
+        currentScreen = CurrentClientScreen.FRIEND_REQUEST_MENU;
+        tempStorage.clear();
+        System.out.println();
+        System.out.println("Select an option to perform on a friend:");
+        System.out.println("1. send private message");
+        System.out.println("2. return to main menu");
+    }
+
     public void showEditProfileMenu() {
         currentScreen = CurrentClientScreen.EDIT_PROFILE_MENU;
         tempStorage.clear();
@@ -116,7 +125,8 @@ public class ChatClient {
                 writer.sendRequest("view chat list");
                 break;
             case 2:
-                System.out.println("to be implemented");;
+                System.out.println("to be implemented");
+                ;
                 break;
             case 3:
                 writer.sendRequest("view friends list");
@@ -147,45 +157,53 @@ public class ChatClient {
 
     public void handleChatMemberOptionMenuSelection(String input) {
         int selection = validateUserMenuInput(input, 3);
-        if (selection != -1) {
-            if (selection == 3) {
-                showMainMenu();
-            } else {
-                tempStorage.put("chat member action", Integer.toString(selection));
-                askChatMemberName();
-            }
+
+        if (selection == 3) {
+            showMainMenu();
+        } else if (selection != -1) {
+            tempStorage.put("chat member action", Integer.toString(selection));
+            askChatMemberName();
+
         }
     }
 
     public void handleFriendRequestOptionMenuSelection(String input) {
         int selection = validateUserMenuInput(input, 3);
-        if (selection != -1) {
-            if (selection == 3) {
+
+        if (selection == 3) {
+            showMainMenu();
+        } else if (selection != -1) {
+            tempStorage.put("friend request action", Integer.toString(selection));
+            askFriendRequestName();
+        }
+    }
+
+    public void handleFriendListOptionMenuSelection(String input) {
+        int selection = validateUserMenuInput(input, 2);
+        switch (selection) {
+            case 1:
+                System.out.println("To be implemented");
+                break;
+            case 2:
                 showMainMenu();
-            } else {
-                tempStorage.put("friend request action", Integer.toString(selection));
-                askFriendRequestName();
-            }
+                break;
         }
     }
 
     public void handleEditProfileMenuSelection(String input) {
         int selection = validateUserMenuInput(input, 3);
-        if (selection != -1) {
-            tempStorage.put("edit profile", Integer.toString(selection));
-            switch (selection) {
-                case 1:
-                    currentScreen = CurrentClientScreen.EDITING_NAME;
-                    System.out.println("Enter new name:");
-                    break;
-                case 2:
-                    currentScreen = CurrentClientScreen.EDITING_BIO;
-                    System.out.println("Enter new bio:");
-                    break;
-                case 3:
-                    showMainMenu();
-                    break;
-            }
+        switch (selection) {
+            case 1:
+                currentScreen = CurrentClientScreen.EDITING_NAME;
+                System.out.println("Enter new name:");
+                break;
+            case 2:
+                currentScreen = CurrentClientScreen.EDITING_BIO;
+                System.out.println("Enter new bio:");
+                break;
+            case 3:
+                showMainMenu();
+                break;
         }
     }
 
@@ -260,18 +278,16 @@ public class ChatClient {
         );
     }
 
-    public void chatListShow(String list) {
-        list = list.replace("show chat list:", "").trim();
-        if (list.equals("")) {
+    public void chatListShow(String[] chats) {
+        if (chats.length == 0) {
             System.out.println("You aren't currently part of any chat rooms.");
             showMainMenu();
             return;
         }
 
         System.out.println("Your chat rooms:");
-        String[] chatNames = list.split(",");
-        for (int i = 1; i < chatNames.length + 1; i++) {
-            System.out.println(chatNames[i - 1]);
+        for (int i = 1; i < chats.length + 1; i++) {
+            System.out.println(chats[i - 1]);
         }
         showChatRoomOptionMenu();
     }
@@ -309,19 +325,16 @@ public class ChatClient {
         }
     }
 
-    public void chatRoomShowMembers(String request) {
-        request = request.replace("show chat room members:", "").trim();
-
+    public void chatRoomShowMembers(String[] members) {
         // chat rooms are deleted without members but
-        if (request.equals("")) {
+        if (members.length == 0) {
             System.out.println("No chat room members. This chat room has been deleted since your last request.");
             return;
         }
 
         System.out.println("The members of this chat room are:");
-        String[] chatNames = request.split(",");
-        for (int i = 1; i < chatNames.length + 1; i++) {
-            System.out.println(chatNames[i - 1]);
+        for (int i = 1; i < members.length + 1; i++) {
+            System.out.println(members[i - 1]);
         }
         showChatMemberOptionMenu();
     }
@@ -372,12 +385,10 @@ public class ChatClient {
         showChatMemberOptionMenu();
     }
 
-    public void chatMemberShowProfile(String input) {
-        String s = input.replace("show profile:", "").trim();
-        String[] userData = s.split(",");
-        System.out.println("username: " + userData[0]);
-        System.out.println("name: " + userData[1]);
-        System.out.println("bio: " + userData[2]);
+    public void chatMemberShowProfile(String[] profile) {
+        System.out.println("username: " + profile[0]);
+        System.out.println("name: " + profile[1]);
+        System.out.println("bio: " + profile[2]);
 
         showChatMemberOptionMenu();
     }
@@ -404,32 +415,29 @@ public class ChatClient {
         showMainMenu();
     }
 
-    public void friendsListShow(String friends) {
-        friends = friends.replace("show friends list:", "").trim();
-        if (friends.equals("")) {
+    public void friendsListShow(String[] friends) {
+        if (friends.length == 0) {
             System.out.println("You don't currently have any friends in your friends list.");
-        } else {
-            System.out.println("Your friends:");
-            String[] friendNames = friends.split(",");
-            for (int i = 1; i < friendNames.length + 1; i++) {
-                System.out.println(friendNames[i - 1]);
-            }
+            return;
         }
-        showMainMenu();
+
+        System.out.println("Your friends:");
+        for (int i = 1; i < friends.length + 1; i++) {
+            System.out.println(friends[i - 1]);
+        }
+        showFriendListOptionMenu();
     }
 
-    public void friendRequestsShow(String requests) {
-        requests = requests.replace("show friend request list:", "").trim();
-        if (requests.equals("")) {
+    public void friendRequestsShow(String[] requests) {
+        if (requests.length == 0) {
             System.out.println("You don't have any pending friend requests.");
             showMainMenu();
             return;
         }
 
         System.out.println("Your pending requests:");
-        String[] friendNames = requests.split(",");
-        for (int i = 1; i < friendNames.length + 1; i++) {
-            System.out.println(friendNames[i - 1]);
+        for (int i = 1; i < requests.length + 1; i++) {
+            System.out.println(requests[i - 1]);
         }
         showFriendRequestOptionMenu();
     }
@@ -445,7 +453,7 @@ public class ChatClient {
             showFriendRequestOptionMenu();
         } else {
             tempStorage.put("friend request name", input);
-            writer.sendRequest("check friend request exists:"+ input);
+            writer.sendRequest("check friend request exists:" + input);
         }
     }
 
@@ -467,14 +475,9 @@ public class ChatClient {
         showMainMenu();
     }
 
-    public void profileShow(String input) {
-        String params = input.replace("show own profile:", "").trim();
-        String[] profileData = params.split(",");
-
-        String name = profileData[0];
-        String bio = profileData[1];
-        System.out.println("Name: " + name);
-        System.out.println("Bio: " + bio);
+    public void profileShow(String[] profile) {
+        System.out.println("Name: " + profile[0]);
+        System.out.println("Bio: " + profile[1]);
         showEditProfileMenu();
     }
 
@@ -508,14 +511,15 @@ public class ChatClient {
 
     private int validateUserMenuInput(String input, int limit) {
         try {
-            int selection = Integer.parseInt(input.trim());
+            int selection = Integer.parseInt(input);
+
             if (selection < 1 || selection > limit) {
-                System.out.println("Not a valid option, please enter a number between 1 and " + limit);
+                System.out.println("Not a valid option, please enter a number between 1 and " + limit + ":");
                 return -1;
             }
             return selection;
         } catch (NumberFormatException e) {
-            System.out.println("Not a valid option, please enter a number");
+            System.out.println("Not a valid option, please enter a number:");
             return -1;
         }
     }
