@@ -172,6 +172,14 @@ public class ChatServer implements Runnable {
         data.accounts.get(requestee).removeFriendRequest(requestee);
     }
 
+    public void editAccountName(User user, String name) {
+        data.accounts.get(user.getUsername()).setName(name);
+    }
+
+    public void editAccountBio(User user, String bio) {
+        data.accounts.get(user.getUsername()).setBio(bio);
+    }
+
     public void logoutUser(User user) {
         user.setLoggedIn(false);
     }

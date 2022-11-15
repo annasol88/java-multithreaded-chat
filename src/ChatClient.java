@@ -47,7 +47,7 @@ public class ChatClient {
         System.out.println("2. create new chat");
         System.out.println("3. view friends list");
         System.out.println("4. view pending friend requests");
-        System.out.println("5. edit profile");
+        System.out.println("5. view profile");
         System.out.println("6. logout");
     }
 
@@ -170,7 +170,23 @@ public class ChatClient {
     }
 
     public void handleEditProfileMenuSelection(String input) {
-
+        int selection = validateUserMenuInput(input, 3);
+        if (selection != -1) {
+            tempStorage.put("edit profile", Integer.toString(selection));
+            switch (selection) {
+                case 1:
+                    currentScreen = CurrentClientScreen.EDITING_NAME;
+                    System.out.println("Enter new name:");
+                    break;
+                case 2:
+                    currentScreen = CurrentClientScreen.EDITING_BIO;
+                    System.out.println("Enter new bio:");
+                    break;
+                case 3:
+                    showMainMenu();
+                    break;
+            }
+        }
     }
 
     public void loginGetUsername() {
@@ -448,6 +464,29 @@ public class ChatClient {
                 writer.sendRequest("deny friend request:" + tempStorage.get("friend request name"));
                 break;
         }
+        showMainMenu();
+    }
+
+    public void profileShow(String input) {
+        String params = input.replace("show own profile:", "").trim();
+        String[] profileData = params.split(",");
+
+        String name = profileData[0];
+        String bio = profileData[1];
+        System.out.println("Name: " + name);
+        System.out.println("Bio: " + bio);
+        showEditProfileMenu();
+    }
+
+    public void profileEditName(String input) {
+        writer.sendRequest("edit profile name:" + input);
+        System.out.println("Name updated to: " + input);
+        showMainMenu();
+    }
+
+    public void profileEditBio(String input) {
+        writer.sendRequest("edit profile bio:" + input);
+        System.out.println("Bio updated to: " + input);
         showMainMenu();
     }
 

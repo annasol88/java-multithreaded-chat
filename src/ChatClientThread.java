@@ -71,6 +71,12 @@ public class ChatClientThread implements Runnable {
                     acceptFriendRequest(request);
                 } else if (request.startsWith("deny friend request")) {
                     denyFriendRequest(request);
+                } else if (request.startsWith("view own profile")) {
+                    viewOwnProfile();
+                }  else if (request.startsWith("edit profile name")) {
+                    viewOwnProfile();
+                } else if (request.startsWith("edit profile bio")) {
+                    viewOwnProfile();
                 } else if (request.startsWith("logout")) {
                     logout();
                 }
@@ -259,6 +265,20 @@ public class ChatClientThread implements Runnable {
     private void denyFriendRequest(String request) {
         String username = request.replace("deny friend request:", "").trim();
         server.removeFriendRequest(username, currentUser);
+    }
+
+    private void viewOwnProfile() {
+        output.println("show own profile:" + currentUser.getName() + "," + currentUser.getBio());
+    }
+
+    private void editProfileName(String request) {
+        String name = request.replace("edit profile name:", "").trim();
+        server.editAccountName(currentUser, name);
+    }
+
+    private void editProfileBio(String request) {
+        String bio = request.replace("edit profile bio:", "").trim();
+        server.editAccountBio(currentUser, bio);
     }
 
     private void exitChatRoom() {

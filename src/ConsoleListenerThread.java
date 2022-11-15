@@ -80,6 +80,15 @@ public class ConsoleListenerThread implements Runnable {
             case CHATTING:
                 client.chatRoomSendMessage(input);
                 break;
+            case EDIT_PROFILE_MENU:
+                client.handleEditProfileMenuSelection(input);
+                break;
+            case EDITING_NAME:
+                client.profileEditName(input);
+                break;
+            case EDITING_BIO:
+                client.profileEditBio(input);
+                break;
         }
     }
 }
