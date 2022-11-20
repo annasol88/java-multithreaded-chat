@@ -36,6 +36,10 @@ public class ConsoleListenerThread implements Runnable {
     private void handleUserInput(String input) {
         input = input.trim();
 
+        if(client.currentScreen == null) {
+            return;
+        }
+
         switch (client.currentScreen) {
             case LOGIN_MENU:
                 client.handleLoginMenuSelection(input);

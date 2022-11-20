@@ -1,4 +1,4 @@
-public enum CurrentClientScreen {
+public enum CurrentClientScreenEnum {
     LOGIN_MENU,
     LOGIN_ENTERING_USERNAME,
     LOGIN_ENTERING_PASSWORD,

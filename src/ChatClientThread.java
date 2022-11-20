@@ -9,11 +9,12 @@ import java.util.List;
 public class ChatClientThread implements Runnable {
     private Socket socket;
     private ChatServer server;
-    BufferedReader input;
+    private BufferedReader input;
     PrintWriter output;
 
     // User currently logged into the client
-    User currentUser = null;
+    private User currentUser = null;
+    // Chat room that is currently running or null if the user is not running a chat
     String openChatRoom = null;
 
     public ChatClientThread(Socket socket, ChatServer server) {
@@ -38,52 +39,78 @@ public class ChatClientThread implements Runnable {
                 String header = Utils.getRequestHeader(request);
                 String[] params = Utils.getRequestParams(request);
 
-                if (header.equals("login")) {
-                    login(params);
-                } else if (header.equals("check username free")) {
-                    checkUsernameFree(params[0]);
-                } else if (header.equals("register user")) {
-                    registerUserAndLogin(params);
-                } else if (header.equals("view chat list")) {
-                    getChatRoomNames();
-                } else if (header.equals("check chat exists")) {
-                    validateChatExistsForUser(params[0]);
-                } else if (header.equals("view chat members")) {
-                    viewChatRoomMembers(params[0]);
-                } else if (header.equals("check chat member exists")) {
-                    validateMemberExistsInChatRoom(params);
-                } else if (header.equals("send friend request")) {
-                    sendFriendRequest(params[0]);
-                } else if (header.equals("view profile")) {
-                    getUserProfile(params[0]);
-                } else if (header.equals("enter chat room")) {
-                    enterChatRoom(params[0]);
-                } else if (header.equals("send message")) {
-                    sendMessageToChat(params[0]);
-                } else if (header.equals("close chat room")) {
-                    exitChatRoom();
-                } else if (header.equals("leave chat room")) {
-                    leaveChatRoom(params[0]);
-                } else if (header.equals("view friends list")) {
-                    getFriendList();
-                } else if (header.equals("view friend requests")) {
-                    getFriendRequests();
-                } else if (header.equals("check friend request exists")) {
-                    checkFriendRequestExists(params[0]);
-                } else if (header.equals("accept friend request")) {
-                    acceptFriendRequest(params[0]);
-                } else if (header.equals("deny friend request")) {
-                    denyFriendRequest(params[0]);
-                } else if (header.equals("view own profile")) {
-                    viewOwnProfile();
-                } else if (header.equals("edit profile name")) {
-                    editProfileName(params[0]);
-                } else if (header.equals("edit profile bio")) {
-                    editProfileBio(params[0]);
-                } else if (header.equals("logout")) {
-                    logout();
-                } else {
-                    output.println("Error: request not recognised: " + request);
+                switch (header) {
+                    case "login":
+                        login(params);
+                        break;
+                    case "check username free":
+                        checkUsernameFree(params[0]);
+                        break;
+                    case "register user":
+                        registerUserAndLogin(params);
+                        break;
+                    case "view chat list":
+                        getChatRoomNames();
+                        break;
+                    case "check chat exists":
+                        validateChatExistsForUser(params[0]);
+                        break;
+                    case "view chat members":
+                        viewChatRoomMembers(params[0]);
+                        break;
+                    case "check chat member exists":
+                        validateMemberExistsInChatRoom(params);
+                        break;
+                    case "send friend request":
+                        sendFriendRequest(params[0]);
+                        break;
+                    case "view profile":
+                        getUserProfile(params[0]);
+                        break;
+                    case "enter chat room":
+                        enterChatRoom(params[0]);
+                        break;
+                    case "send message":
+                        sendMessageToChat(params[0]);
+                        break;
+                    case "close chat room":
+                        exitChatRoom();
+                        break;
+                    case "leave chat room":
+                        leaveChatRoom(params[0]);
+                        break;
+                    case "view friends list":
+                        getFriendList();
+                        break;
+                    case "view friend requests":
+                        getFriendRequests();
+                        break;
+                    case "check friend request exists":
+                        checkFriendRequestExists(params[0]);
+                        break;
+                    case "accept friend request":
+                        acceptFriendRequest(params[0]);
+                        break;
+                    case "deny friend request":
+                        denyFriendRequest(params[0]);
+                        break;
+                    case "view own profile":
+                        viewOwnProfile();
+                        break;
+                    case "edit profile name":
+                        editProfileName(params[0]);
+                        break;
+                    case "edit profile bio":
+                        editProfileBio(params[0]);
+                        break;
+                    case "logout":
+                        logout();
+                        break;
+                    case "stop":
+                        break;
+                    default:
+                        output.println("Error: request not recognised: " + request);
+                        break;
                 }
             }
         } catch (IOException e) {
@@ -93,26 +120,11 @@ public class ChatClientThread implements Runnable {
         }
     }
 
-    public void stop() {
-        System.out.println("client disconnected: " + socket.getPort());
-        if (currentUser != null) {
-            logout();
-        }
-        try {
-            input.close();
-            output.close();
-            socket.close();
-        } catch (IOException e) {
-            System.err.println("Failed to close socket input and output streams: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
     private void login(String[] credentials) {
         String username = credentials[0];
         String password = credentials[1];
 
-        User user = server.getValidUserFromCredentials(username, password);
+        User user = server.VerifyUserCredentials(username, password);
 
         if (user == null) {
             output.println("login invalid");
@@ -127,7 +139,7 @@ public class ChatClientThread implements Runnable {
     }
 
     private void checkUsernameFree(String username) {
-        if (server.loginSaveUsernameIfFree(username)) {
+        if (server.saveUsernameIfFree(username)) {
             output.println("register username free");
             return;
         }
@@ -142,7 +154,8 @@ public class ChatClientThread implements Runnable {
 
         User user = new User(name, bio, username, password);
 
-        server.registerUserAndLogin(user);
+        server.registerUser(user);
+        server.loginUser(user);
         currentUser = user;
         output.println("login success");
     }
@@ -205,22 +218,25 @@ public class ChatClientThread implements Runnable {
     private void enterChatRoom(String chatName) {
         openChatRoom = chatName;
         server.addToRunningChats(this);
+        server.sendMessageToChatRoom(currentUser.getName() +" has entered the chat.", openChatRoom, this);
         output.println("run chat room");
     }
 
     private void sendMessageToChat(String message) {
         if (!message.equals("")) {
             message = currentUser.getName() + ": " + message;
-            server.sendToChatRoom(message, openChatRoom, this);
+            server.sendMessageToChatRoom(message, openChatRoom, this);
         }
     }
 
     private void exitChatRoom() {
+        server.sendMessageToChatRoom(currentUser.getName() +" has closed the chat.", openChatRoom, this);
         openChatRoom = null;
         server.removeRunningChats(this);
     }
 
     private void leaveChatRoom(String chatName) {
+        server.sendMessageToChatRoom(currentUser.getName() +" has left the chat.", chatName, this);
         server.leaveChatRoom(chatName, currentUser.getUsername());
     }
 
@@ -228,7 +244,7 @@ public class ChatClientThread implements Runnable {
         Collection<User> friends = currentUser.getFriends();
         StringBuilder friendsString = new StringBuilder();
         for (User friend : friends) {
-            friendsString.append(friend.getName()).append(",");
+            friendsString.append(friend.getUsername()).append(",");
         }
         output.println("show friends list:" + friendsString);
     }
@@ -273,5 +289,12 @@ public class ChatClientThread implements Runnable {
     private void logout() {
         server.logoutUser(currentUser);
         currentUser = null;
+    }
+
+    private void stop() {
+        System.out.println("client disconnected: " + socket.getPort());
+        if (currentUser != null) {
+            logout();
+        }
     }
 }

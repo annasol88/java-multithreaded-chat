@@ -5,13 +5,11 @@ import java.net.Socket;
 
 public class ListenerThread implements Runnable {
     private BufferedReader reader;
-    private Socket socket;
     private ChatClient client;
 
     private boolean stopped = false;
 
     public ListenerThread(Socket socket, ChatClient client) {
-        this.socket = socket;
         this.client = client;
 
         try {
@@ -26,7 +24,7 @@ public class ListenerThread implements Runnable {
         try {
             while (!stopped) {
                 String request = reader.readLine();
-                handleServerInput(request);
+                mapRequestToAction(request);
             }
         } catch (IOException e) {
             stop();
@@ -34,65 +32,90 @@ public class ListenerThread implements Runnable {
     }
 
     public void stop() {
+        this.stopped = true;
+
         try {
-            this.stopped = true;
             reader.close();
         } catch (IOException ex) {
-            System.out.println("Error writing to server: " + ex.getMessage());
+            System.out.println("Failed to close Listener Server Listener: " + ex.getMessage());
         }
     }
 
-    private void handleServerInput(String request) {
+    private void mapRequestToAction(String request) {
         if (request != null) {
             String header = Utils.getRequestHeader(request);
             String[] params = Utils.getRequestParams(request);
 
-            if (header.equals("login success")) {
-                client.loginSuccess();
-            } else if (header.equals("login invalid")) {
-                client.loginInvalid();
-            } else if (header.equals("already logged in")) {
-                client.loginAlreadyOnline();
-            } else if (header.equals("register username free")) {
-                client.registerUsernameFreeGetPassword();
-            } else if (header.equals("register username taken")) {
-                client.registerUsernameTaken();
-            } else if (header.equals("show chat list")) {
-                client.chatListShow(params);
-            } else if (header.equals("chat room exists")) {
-                client.chatRoomValidDoMenuSelection();
-            } else if (header.equals("chat room invalid")) {
-                client.chatRoomNameInvalid();
-            } else if (header.equals("show chat room members")) {
-                client.chatRoomShowMembers(params);
-            } else if (header.equals("member exists in chat room")) {
-                client.chatMemberDoMenuSelection();
-            } else if (header.equals("chat room member invalid")) {
-                client.chatMemberInvalid();
-            } else if (header.equals("friend request sent")) {
-                client.chatMemberFriendRequestSent();
-            } else if (header.equals("already friends")) {
-                client.chatMemberAlreadyFriends();
-            }else if (header.equals("cannot friend request yourself")) {
-                client.chatMemberCannotFriendRequestYourself();
-            } else if (header.equals("show profile")) {
-                client.chatMemberShowProfile(params);
-            }  else if (header.equals("run chat room")) {
-                client.chatRoomRun();
-            } else if (header.equals("exit chat room")) {
-                client.showMainMenu();
-            } else if (header.equals("show friends list")) {
-                client.friendsListShow(params);
-            } else if (header.equals("show friend request list")) {
-                client.friendRequestsShow(params);
-            } else if (header.equals("friend request exists")) {
-                client.friendRequestsNameValidDoMenuSelection();
-            } else if (header.equals("friend request invalid")) {
-                client.friendRequestsNameInvalid();
-            } else if (header.equals("show own profile")) {
-                client.profileShow(params);
-            } else {
-                client.print(request);
+            switch (header) {
+                case "login success":
+                    client.loginSuccess();
+                    break;
+                case "login invalid":
+                    client.loginInvalid();
+                    break;
+                case "already logged in":
+                    client.loginAlreadyOnline();
+                    break;
+                case "register username free":
+                    client.registerUsernameFreeGetPassword();
+                    break;
+                case "register username taken":
+                    client.registerUsernameTaken();
+                    break;
+                case "show chat list":
+                    client.chatListShow(params);
+                    break;
+                case "chat room exists":
+                    client.chatRoomValidDoMenuSelection();
+                    break;
+                case "chat room invalid":
+                    client.chatRoomNameInvalid();
+                    break;
+                case "show chat room members":
+                    client.chatRoomShowMembers(params);
+                    break;
+                case "member exists in chat room":
+                    client.chatMemberDoMenuSelection();
+                    break;
+                case "chat room member invalid":
+                    client.chatMemberInvalid();
+                    break;
+                case "friend request sent":
+                    client.chatMemberFriendRequestSent();
+                    break;
+                case "already friends":
+                    client.chatMemberAlreadyFriends();
+                    break;
+                case "cannot friend request yourself":
+                    client.chatMemberCannotFriendRequestYourself();
+                    break;
+                case "show profile":
+                    client.chatMemberShowProfile(params);
+                    break;
+                case "run chat room":
+                    client.chatRoomRun();
+                    break;
+                case "exit chat room":
+                    client.showMainMenu();
+                    break;
+                case "show friends list":
+                    client.friendsListShow(params);
+                    break;
+                case "show friend request list":
+                    client.friendRequestsShow(params);
+                    break;
+                case "friend request exists":
+                    client.friendRequestsNameValidDoMenuSelection();
+                    break;
+                case "friend request invalid":
+                    client.friendRequestsNameInvalid();
+                    break;
+                case "show own profile":
+                    client.profileShow(params);
+                    break;
+                default:
+                    client.print(request);
+                    break;
             }
         }
     }

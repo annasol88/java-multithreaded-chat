@@ -10,8 +10,8 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class ChatServer implements Runnable {
-    protected final int port;
-    protected ServerSocket serverSocket = null;
+    private final int port;
+    private ServerSocket serverSocket = null;
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
     private static ServerData data;
@@ -49,7 +49,7 @@ public class ChatServer implements Runnable {
     }
 
     public synchronized void stop() {
-        System.out.println("closed");
+        System.out.println("Server closed");
         try {
             this.serverSocket.close();
         } catch (IOException e) {
@@ -57,8 +57,13 @@ public class ChatServer implements Runnable {
         }
     }
 
-    public User getValidUserFromCredentials(String username, String password) {
-        User user = data.accounts.get(username);
+    /*
+     * validates user credentials.
+     * No need to synchronize here because we are only reading data and
+     * our concurrentHashmap will take care of writes happening at the same time.
+     */
+    public User VerifyUserCredentials(String username, String password) {
+        User user = getAccountByUsername(username);
         //if user exist check password and password correct
         if (user != null && user.getPassword().equals(password)) {
             return user;
@@ -66,16 +71,24 @@ public class ChatServer implements Runnable {
         return null;
     }
 
+    /*
+     * synchronizing on user ensures 2 users can't log in at the same time.
+     * This is intentionally isolated this from verifying credentials above
+     * since it could remove some potential for deadlocks as we are only synchronizing
+     * on user when we need to. This also allows us to reuse this when we register a user
+     */
     public boolean loginUser(User user) {
-        if (user.isLoggedIn()) {
-            return false;
+        synchronized (user) {
+            if (user.isLoggedIn()) {
+                return false;
+            }
+            user.setLoggedIn(true);
+            return true;
         }
-        user.setLoggedIn(true);
-        return true;
     }
 
-    public boolean loginSaveUsernameIfFree(String username) {
-        if(!accountExists(username)) {
+    public boolean saveUsernameIfFree(String username) {
+        if (!accountExists(username)) {
             //adding placeholder to prevent username being taken by another client
             data.accounts.put(username, new User(null, null, null, null));
             return true;
@@ -83,9 +96,8 @@ public class ChatServer implements Runnable {
         return false;
     }
 
-    public void registerUserAndLogin(User user) {
+    public void registerUser(User user) {
         data.accounts.put(user.getUsername(), user);
-        user.setLoggedIn(true);
     }
 
     public boolean chatRoomExists(String chatName) {
@@ -113,34 +125,15 @@ public class ChatServer implements Runnable {
         return getChatRoomMembers(chatRoomName).contains(getAccountByUsername(username));
     }
 
-    public boolean sendFriendRequest(String requestee, User requestor) {
-        User requesteeUser = getAccountByUsername(requestee);
-
-        if(data.accounts.get(requestor.getUsername()).getFriends().contains(requesteeUser)) {
-            return false;
-        }
-        //the concurrentHashMap will remove duplicate requests so no need to check
-        data.accounts.get(requestee).addFriendRequest(requestor);
-        return true;
-    }
-
     public User getAccountByUsername(String username) {
         return data.accounts.get(username);
-    }
-
-    public void leaveChatRoom(String chatName, String username) {
-        data.chatRooms.get(chatName).getMembers().remove(username);
-        // destroy chat if empty
-        if (data.chatRooms.get(chatName).getMembers().isEmpty()) {
-            data.chatRooms.remove(chatName);
-        }
     }
 
     public void addToRunningChats(ChatClientThread client) {
         this.runningChats.add(client);
     }
 
-    public void sendToChatRoom(String message, String chatRoom, ChatClientThread senderThread) {
+    public void sendMessageToChatRoom(String message, String chatRoom, ChatClientThread senderThread) {
         synchronized (runningChats) {
             for (ChatClientThread clientThread : runningChats) {
                 //send message to all clients running the chatroom apart from the sender
@@ -159,6 +152,25 @@ public class ChatServer implements Runnable {
         this.runningChats.remove(client);
     }
 
+    public void leaveChatRoom(String chatName, String username) {
+        data.chatRooms.get(chatName).getMembers().remove(username);
+        // destroy chat if empty
+        if (data.chatRooms.get(chatName).getMembers().isEmpty()) {
+            data.chatRooms.remove(chatName);
+        }
+    }
+
+    public boolean sendFriendRequest(String requestee, User requester) {
+        User requesteeUser = getAccountByUsername(requestee);
+
+        if (data.accounts.get(requester.getUsername()).getFriends().contains(requesteeUser)) {
+            return false;
+        }
+        //the concurrentHashMap will remove duplicate requests so no need to check
+        data.accounts.get(requestee).addFriendRequest(requester);
+        return true;
+    }
+
     public void acceptFriendRequest(String requester, User requestee) {
         User requesterUser = getAccountByUsername(requester);
 
@@ -169,7 +181,7 @@ public class ChatServer implements Runnable {
     }
 
     public void removeFriendRequest(String requester, User requestee) {
-        data.accounts.get(requestee).removeFriendRequest(requestee);
+        requestee.removeFriendRequest(getAccountByUsername(requester));
     }
 
     public void editAccountName(User user, String name) {
@@ -181,7 +193,9 @@ public class ChatServer implements Runnable {
     }
 
     public void logoutUser(User user) {
-        user.setLoggedIn(false);
+        synchronized (user) {
+            user.setLoggedIn(false);
+        }
     }
 }
 
