@@ -27,19 +27,22 @@ concurrentLinkedQueue. (more on this below)
 to be handled. This is essential to solve our final blocking issue with listening to System.in, hence allowing messages 
 from the server (or other users in a chatroom) to not get blocked because the ChatClient is waiting for user input. 
 
-
 ## Synchronization Issues 
 #### ConcurrentHashmaps to store data
 Our application uses the Java Util Concurrent Hashmap to store:
 - chat rooms in a server
 - accounts in a server
-- friends list on a User object
+- friends list & friends request list on a User object
 
 This is the cleanest implementation we could find to store data that should be accessed synchronously.
 From our understanding of the Java Docs a ConcurrentHashmap allows any number of threads to perform 
 retrieval operation at any given time, and for update/add/remove operations the thread must lock the particular 
 segment in which the thread wants to operate, allowing these operations to be done safely. 
 This also removes the need for manually synchronizing methods and data objects when using them. 
+
+#### Synchronizing user object on log in & logout
+ChatServer functions to login and logout a user, synchronize on user to only allow one thread to login 
+and log out as a given user at a time.
 
 #### Client thread synchronizedList
 For chat messaging functionality, the server stores a list to reference all the clients currently 
@@ -48,35 +51,36 @@ This is implemented as a synchronized list and is synchronized when being traver
 safety between clients leaving and joining a chatroom.
 
 ## Deadlocks
-
-#### Attempts in the design were made to remediate the possibility of deadlocks
+#### Attempts in the design have been made to remediate the possibility of deadlocks
 write concurrentLinkedQueue
 login split into 2 parts
 
-
 ## ThreadPool
+When a new chat client is created, ChatClientThreads are scheduled through a thread pool 
+on the ChatServer. This is implemented as a newCachedThreadPool() executor because this creates
+new threads as needed which is appropriate since our application doesn't have a fixed number of
+clients it can host. This also optimizes for performance byt reusing previously constructed threads
+when they become available. 
 
 ## IO Streams
 #### Reasoning for choosing the following IO stream objects
 PrintWriter - Unlike BufferedReader and allows auto-flush for every println/print/write which
 removes the need to manually call the flush() method each time data is written.
 The println operation also adds a /n (new line) exit character to strings written, which removes the
-need to manually do this also.
+need to manually do this.
  
 BufferedReader - A fast and efficient implementation for reading Strings from an input stream.
 
 ## Considerations
 #### Some considerations for future.
-Improvements could be made to message passing to use Enumerated string or schemas to remove coupling between our 
-communication streams will improve readability and human error.  
+Improvements could be made to message passing to remove coupling between our communication streams
+which will improve readability and human error.  
 
 Improvements could be made to the number of server requests done
 
 
-missing functionality - 
-
 ## Scalability
-...//TODO
+//TODO
 
 ## Modularity
 //TODO

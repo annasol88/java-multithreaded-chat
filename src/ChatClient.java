@@ -1,20 +1,24 @@
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.HashMap;
 
 public class ChatClient {
+    // represents the current screen the user is responding to
+    // this is used to properly map user input to the proper operation
+    public CurrentClientScreenEnum currentScreen;
+
+    private Socket socket;
     private WriterThread writer;
     private ListenerThread listener;
     private ConsoleListenerThread consoleListener;
 
-    // represents the current screen the user is responding to
-    // this is used to properly map user input to the proper operation
-    public CurrentClientScreen currentScreen;
-
     private HashMap<String, String> tempStorage = new HashMap<>();
 
     public ChatClient(Socket socket) {
+        this.socket = socket;
+
         listener = new ListenerThread(socket, this);
         writer = new WriterThread(socket);
 
@@ -29,7 +33,7 @@ public class ChatClient {
     }
 
     public void showLoginMenu() {
-        currentScreen = CurrentClientScreen.LOGIN_MENU;
+        currentScreen = CurrentClientScreenEnum.LOGIN_MENU;
         tempStorage.clear();
         System.out.println();
         System.out.println("Welcome to the chat app, please select what you want to do:");
@@ -39,7 +43,7 @@ public class ChatClient {
     }
 
     public void showMainMenu() {
-        currentScreen = CurrentClientScreen.MAIN_MENU;
+        currentScreen = CurrentClientScreenEnum.MAIN_MENU;
         tempStorage.clear();
         System.out.println();
         System.out.println("Select an option from the menu below:");
@@ -47,12 +51,12 @@ public class ChatClient {
         System.out.println("2. create new chat");
         System.out.println("3. view friends list");
         System.out.println("4. view pending friend requests");
-        System.out.println("5. edit profile");
+        System.out.println("5. view profile");
         System.out.println("6. logout");
     }
 
     public void showChatRoomOptionMenu() {
-        currentScreen = CurrentClientScreen.CHATROOM_OPTION_MENU;
+        currentScreen = CurrentClientScreenEnum.CHATROOM_OPTION_MENU;
         tempStorage.remove("chat room action");
         tempStorage.remove("chat room name");
         System.out.println();
@@ -64,7 +68,7 @@ public class ChatClient {
     }
 
     public void showChatMemberOptionMenu() {
-        currentScreen = CurrentClientScreen.CHAT_MEMBER_OPTION_MENU;
+        currentScreen = CurrentClientScreenEnum.CHAT_MEMBER_OPTION_MENU;
         tempStorage.remove("chat member action");
         tempStorage.remove("chat member name");
         System.out.println();
@@ -74,8 +78,17 @@ public class ChatClient {
         System.out.println("3. return to main menu");
     }
 
+    public void showFriendListOptionMenu() {
+        currentScreen = CurrentClientScreenEnum.FRIEND_LIST_MENU;
+        tempStorage.clear();
+        System.out.println();
+        System.out.println("Select an option to perform on a friend:");
+        System.out.println("1. send private message");
+        System.out.println("2. return to main menu");
+    }
+
     public void showFriendRequestOptionMenu() {
-        currentScreen = CurrentClientScreen.FRIEND_REQUEST_MENU;
+        currentScreen = CurrentClientScreenEnum.FRIEND_REQUEST_MENU;
         tempStorage.clear();
         System.out.println();
         System.out.println("Select an option to perform on a your friend request:");
@@ -85,7 +98,7 @@ public class ChatClient {
     }
 
     public void showEditProfileMenu() {
-        currentScreen = CurrentClientScreen.EDIT_PROFILE_MENU;
+        currentScreen = CurrentClientScreenEnum.EDIT_PROFILE_MENU;
         tempStorage.clear();
         System.out.println();
         System.out.println("Select the part of your profile you would like to edit:");
@@ -116,7 +129,7 @@ public class ChatClient {
                 writer.sendRequest("view chat list");
                 break;
             case 2:
-                System.out.println("to be implemented");;
+                System.out.println("to be implemented");
                 break;
             case 3:
                 writer.sendRequest("view friends list");
@@ -147,40 +160,64 @@ public class ChatClient {
 
     public void handleChatMemberOptionMenuSelection(String input) {
         int selection = validateUserMenuInput(input, 3);
-        if (selection != -1) {
-            if (selection == 3) {
+
+        if (selection == 3) {
+            showMainMenu();
+        } else if (selection != -1) {
+            tempStorage.put("chat member action", Integer.toString(selection));
+            askChatMemberName();
+
+        }
+    }
+
+    public void handleFriendListOptionMenuSelection(String input) {
+        int selection = validateUserMenuInput(input, 2);
+        switch (selection) {
+            case 1:
+                System.out.println("To be implemented");
+                break;
+            case 2:
                 showMainMenu();
-            } else {
-                tempStorage.put("chat member action", Integer.toString(selection));
-                askChatMemberName();
-            }
+                break;
         }
     }
 
     public void handleFriendRequestOptionMenuSelection(String input) {
         int selection = validateUserMenuInput(input, 3);
-        if (selection != -1) {
-            if (selection == 3) {
-                showMainMenu();
-            } else {
-                tempStorage.put("friend request action", Integer.toString(selection));
-                askFriendRequestName();
-            }
+
+        if (selection == 3) {
+            showMainMenu();
+        } else if (selection != -1) {
+            tempStorage.put("friend request action", Integer.toString(selection));
+            askFriendRequestName();
         }
     }
 
     public void handleEditProfileMenuSelection(String input) {
-
+        int selection = validateUserMenuInput(input, 3);
+        switch (selection) {
+            case 1:
+                currentScreen = CurrentClientScreenEnum.EDITING_NAME;
+                System.out.println("Enter new name:");
+                break;
+            case 2:
+                currentScreen = CurrentClientScreenEnum.EDITING_BIO;
+                System.out.println("Enter new bio:");
+                break;
+            case 3:
+                showMainMenu();
+                break;
+        }
     }
 
     public void loginGetUsername() {
-        currentScreen = CurrentClientScreen.LOGIN_ENTERING_USERNAME;
+        currentScreen = CurrentClientScreenEnum.LOGIN_ENTERING_USERNAME;
         System.out.println("Please enter your username:");
     }
 
     public void loginUsernameEnteredGetPassword(String username) {
         tempStorage.put("username", username);
-        currentScreen = CurrentClientScreen.LOGIN_ENTERING_PASSWORD;
+        currentScreen = CurrentClientScreenEnum.LOGIN_ENTERING_PASSWORD;
         System.out.println("Please enter your password:");
     }
 
@@ -204,7 +241,7 @@ public class ChatClient {
     }
 
     public void registerGetUsername() {
-        currentScreen = CurrentClientScreen.REGISTER_ENTERING_USERNAME;
+        currentScreen = CurrentClientScreenEnum.REGISTER_ENTERING_USERNAME;
         System.out.println("Please enter a username:");
     }
 
@@ -218,19 +255,19 @@ public class ChatClient {
     }
 
     public void registerUsernameFreeGetPassword() {
-        currentScreen = CurrentClientScreen.REGISTER_ENTERING_PASSWORD;
+        currentScreen = CurrentClientScreenEnum.REGISTER_ENTERING_PASSWORD;
         System.out.println("Please enter a password:");
     }
 
     public void registerPasswordEnteredGetName(String password) {
         tempStorage.put("password", password);
-        currentScreen = CurrentClientScreen.REGISTER_ENTERING_NAME;
+        currentScreen = CurrentClientScreenEnum.REGISTER_ENTERING_NAME;
         System.out.println("Please enter an account name:");
     }
 
     public void registerNameEnteredGetBio(String name) {
         tempStorage.put("name", name);
-        currentScreen = CurrentClientScreen.REGISTER_ENTERING_BIO;
+        currentScreen = CurrentClientScreenEnum.REGISTER_ENTERING_BIO;
         System.out.println("Please enter an account bio:");
     }
 
@@ -244,24 +281,22 @@ public class ChatClient {
         );
     }
 
-    public void chatListShow(String list) {
-        list = list.replace("show chat list:", "").trim();
-        if (list.equals("")) {
+    public void chatListShow(String[] chats) {
+        if (chats.length == 0) {
             System.out.println("You aren't currently part of any chat rooms.");
             showMainMenu();
             return;
         }
 
         System.out.println("Your chat rooms:");
-        String[] chatNames = list.split(",");
-        for (int i = 1; i < chatNames.length + 1; i++) {
-            System.out.println(chatNames[i - 1]);
+        for (int i = 1; i < chats.length + 1; i++) {
+            System.out.println(chats[i - 1]);
         }
         showChatRoomOptionMenu();
     }
 
     public void chatListAskChatRoomName() {
-        currentScreen = CurrentClientScreen.ENTERING_CHAT_NAME;
+        currentScreen = CurrentClientScreenEnum.ENTERING_CHAT_NAME;
         tempStorage.remove("chat room name");
         System.out.println("enter chat room name, or x to return to chat menu:");
     }
@@ -293,25 +328,22 @@ public class ChatClient {
         }
     }
 
-    public void chatRoomShowMembers(String request) {
-        request = request.replace("show chat room members:", "").trim();
-
+    public void chatRoomShowMembers(String[] members) {
         // chat rooms are deleted without members but
-        if (request.equals("")) {
+        if (members.length == 0) {
             System.out.println("No chat room members. This chat room has been deleted since your last request.");
             return;
         }
 
         System.out.println("The members of this chat room are:");
-        String[] chatNames = request.split(",");
-        for (int i = 1; i < chatNames.length + 1; i++) {
-            System.out.println(chatNames[i - 1]);
+        for (int i = 1; i < members.length + 1; i++) {
+            System.out.println(members[i - 1]);
         }
         showChatMemberOptionMenu();
     }
 
     public void askChatMemberName() {
-        currentScreen = CurrentClientScreen.ENTERING_CHAT_MEMBER_NAME;
+        currentScreen = CurrentClientScreenEnum.ENTERING_CHAT_MEMBER_NAME;
         tempStorage.remove("chat member name");
         System.out.println("enter username of a chat member, or x to return to chat menu:");
     }
@@ -356,18 +388,16 @@ public class ChatClient {
         showChatMemberOptionMenu();
     }
 
-    public void chatMemberShowProfile(String input) {
-        String s = input.replace("show profile:", "").trim();
-        String[] userData = s.split(",");
-        System.out.println("username: " + userData[0]);
-        System.out.println("name: " + userData[1]);
-        System.out.println("bio: " + userData[2]);
+    public void chatMemberShowProfile(String[] profile) {
+        System.out.println("username: " + profile[0]);
+        System.out.println("name: " + profile[1]);
+        System.out.println("bio: " + profile[2]);
 
         showChatMemberOptionMenu();
     }
 
     public void chatRoomRun() {
-        currentScreen = CurrentClientScreen.CHATTING;
+        currentScreen = CurrentClientScreenEnum.CHATTING;
         System.out.println("chat room entered: " + tempStorage.get("chat room name"));
         System.out.println("type a message or x to exit");
     }
@@ -388,38 +418,35 @@ public class ChatClient {
         showMainMenu();
     }
 
-    public void friendsListShow(String friends) {
-        friends = friends.replace("show friends list:", "").trim();
-        if (friends.equals("")) {
+    public void friendsListShow(String[] friends) {
+        if (friends.length == 0) {
             System.out.println("You don't currently have any friends in your friends list.");
-        } else {
-            System.out.println("Your friends:");
-            String[] friendNames = friends.split(",");
-            for (int i = 1; i < friendNames.length + 1; i++) {
-                System.out.println(friendNames[i - 1]);
-            }
+            return;
         }
-        showMainMenu();
+
+        System.out.println("Your friends:");
+        for (int i = 1; i < friends.length + 1; i++) {
+            System.out.println(friends[i - 1]);
+        }
+        showFriendListOptionMenu();
     }
 
-    public void friendRequestsShow(String requests) {
-        requests = requests.replace("show friend request list:", "").trim();
-        if (requests.equals("")) {
+    public void friendRequestsShow(String[] requests) {
+        if (requests.length == 0) {
             System.out.println("You don't have any pending friend requests.");
             showMainMenu();
             return;
         }
 
         System.out.println("Your pending requests:");
-        String[] friendNames = requests.split(",");
-        for (int i = 1; i < friendNames.length + 1; i++) {
-            System.out.println(friendNames[i - 1]);
+        for (int i = 1; i < requests.length + 1; i++) {
+            System.out.println(requests[i - 1]);
         }
         showFriendRequestOptionMenu();
     }
 
     public void askFriendRequestName() {
-        currentScreen = CurrentClientScreen.ENTERING_FRIEND_REQUEST_NAME;
+        currentScreen = CurrentClientScreenEnum.ENTERING_FRIEND_REQUEST_NAME;
         tempStorage.remove("friend request name");
         System.out.println("enter username, or x to return to friend request menu:");
     }
@@ -429,7 +456,7 @@ public class ChatClient {
             showFriendRequestOptionMenu();
         } else {
             tempStorage.put("friend request name", input);
-            writer.sendRequest("check friend request exists:"+ input);
+            writer.sendRequest("check friend request exists:" + input);
         }
     }
 
@@ -440,14 +467,41 @@ public class ChatClient {
     public void friendRequestsNameValidDoMenuSelection() {
         switch (tempStorage.get("friend request action")) {
             case "1":
-                System.out.println("request accepted for: " + tempStorage.get("friend request name"));
-                writer.sendRequest("accept friend request:" + tempStorage.get("friend request name"));
+                friendRequestAccept();
                 break;
             case "2":
-                System.out.println("request denied for: " + tempStorage.get("friend request name"));
-                writer.sendRequest("deny friend request:" + tempStorage.get("friend request name"));
+                friendRequestDeny();
                 break;
         }
+        showMainMenu();
+    }
+
+    public void friendRequestAccept() {
+        System.out.println("request denied for: " + tempStorage.get("friend request name"));
+        writer.sendRequest("deny friend request:" + tempStorage.get("friend request name"));
+
+    }
+
+    public void friendRequestDeny() {
+        System.out.println("request denied for: " + tempStorage.get("friend request name"));
+        writer.sendRequest("deny friend request:" + tempStorage.get("friend request name"));
+    }
+
+    public void profileShow(String[] profile) {
+        System.out.println("Name: " + profile[0]);
+        System.out.println("Bio: " + profile[1]);
+        showEditProfileMenu();
+    }
+
+    public void profileEditName(String input) {
+        writer.sendRequest("edit profile name:" + input);
+        System.out.println("Name updated to: " + input);
+        showMainMenu();
+    }
+
+    public void profileEditBio(String input) {
+        writer.sendRequest("edit profile bio:" + input);
+        System.out.println("Bio updated to: " + input);
         showMainMenu();
     }
 
@@ -459,8 +513,16 @@ public class ChatClient {
 
     public void stop() {
         System.out.println("Goodbye");
+        currentScreen = null;
         consoleListener.stop();
         writer.sendRequest("stop");
+        writer.stop();
+
+        try {
+            socket.close();
+        } catch (IOException e) {
+            System.err.println("Failed to close socket connection.");
+        }
     }
 
     public void print(String input) {
@@ -469,14 +531,15 @@ public class ChatClient {
 
     private int validateUserMenuInput(String input, int limit) {
         try {
-            int selection = Integer.parseInt(input.trim());
+            int selection = Integer.parseInt(input);
+
             if (selection < 1 || selection > limit) {
-                System.out.println("Not a valid option, please enter a number between 1 and " + limit);
+                System.out.println("Not a valid option, please enter a number between 1 and " + limit + ":");
                 return -1;
             }
             return selection;
         } catch (NumberFormatException e) {
-            System.out.println("Not a valid option, please enter a number");
+            System.out.println("Not a valid option, please enter a number:");
             return -1;
         }
     }

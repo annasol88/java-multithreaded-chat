@@ -1,4 +1,4 @@
-public enum CurrentClientScreen {
+public enum CurrentClientScreenEnum {
     LOGIN_MENU,
     LOGIN_ENTERING_USERNAME,
     LOGIN_ENTERING_PASSWORD,
@@ -14,8 +14,10 @@ public enum CurrentClientScreen {
     CHATTING,
     NEW_CHAT_ENTERING_NAME,
     NEW_CHAT_ENTERING_MEMBERS,
+    FRIEND_LIST_MENU,
     FRIEND_REQUEST_MENU,
     ENTERING_FRIEND_REQUEST_NAME,
     EDIT_PROFILE_MENU,
-    EDITTING_PROFILE,
+    EDITING_NAME,
+    EDITING_BIO
 }

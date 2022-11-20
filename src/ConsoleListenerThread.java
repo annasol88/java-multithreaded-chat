@@ -34,6 +34,12 @@ public class ConsoleListenerThread implements Runnable {
     }
 
     private void handleUserInput(String input) {
+        input = input.trim();
+
+        if(client.currentScreen == null) {
+            return;
+        }
+
         switch (client.currentScreen) {
             case LOGIN_MENU:
                 client.handleLoginMenuSelection(input);
@@ -71,14 +77,26 @@ public class ConsoleListenerThread implements Runnable {
             case ENTERING_CHAT_MEMBER_NAME:
                 client.chatMemberNameEntered(input);
                 break;
+            case CHATTING:
+                client.chatRoomSendMessage(input);
+                break;
             case FRIEND_REQUEST_MENU:
                 client.handleFriendRequestOptionMenuSelection(input);
                 break;
             case ENTERING_FRIEND_REQUEST_NAME:
                 client.friendRequestNameEntered(input);
                 break;
-            case CHATTING:
-                client.chatRoomSendMessage(input);
+            case FRIEND_LIST_MENU:
+                client.handleFriendListOptionMenuSelection(input);
+                break;
+            case EDIT_PROFILE_MENU:
+                client.handleEditProfileMenuSelection(input);
+                break;
+            case EDITING_NAME:
+                client.profileEditName(input);
+                break;
+            case EDITING_BIO:
+                client.profileEditBio(input);
                 break;
         }
     }

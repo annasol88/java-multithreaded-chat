@@ -2,8 +2,8 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class User {
-    private final String name;
-    private final String bio;
+    private String name;
+    private String bio;
     private final String username;
     private final String password;
     private boolean isLoggedIn;
@@ -48,6 +48,14 @@ public class User {
 
     public Collection<User> getPendingFriendRequests() {
         return pendingFriendRequest.values();
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
     }
 
     public void addFriend(User user) {
