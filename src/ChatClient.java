@@ -14,9 +14,9 @@ public class ChatClient {
     private ListenerThread listener;
     private ConsoleListenerThread consoleListener;
 
-    private HashMap<String, String> tempStorage = new HashMap<>();
+    public HashMap<String, String> tempStorage = new HashMap<>();
 
-    public ChatClient(Socket socket) {
+    public ChatClient(Socket socket, boolean isTest) {
         this.socket = socket;
 
         listener = new ListenerThread(socket, this);
@@ -29,7 +29,9 @@ public class ChatClient {
         new Thread(writer).start();
         new Thread(consoleListener).start();
 
-        showLoginMenu();
+        if (!isTest) {
+            showLoginMenu();
+        }
     }
 
     public void showLoginMenu() {
@@ -320,7 +322,7 @@ public class ChatClient {
                 writer.sendRequest("view chat members:" + tempStorage.get("chat room name"));
                 break;
             case "2":
-                writer.sendRequest("enter chat room:" + tempStorage.get("chat room name"));
+                chatRoomSendEnterRequest();
                 break;
             case "3":
                 chatRoomLeave();
@@ -394,6 +396,10 @@ public class ChatClient {
         System.out.println("bio: " + profile[2]);
 
         showChatMemberOptionMenu();
+    }
+
+    public void chatRoomSendEnterRequest() {
+        writer.sendRequest("enter chat room:" + tempStorage.get("chat room name"));
     }
 
     public void chatRoomRun() {
@@ -542,5 +548,9 @@ public class ChatClient {
             System.out.println("Not a valid option, please enter a number:");
             return -1;
         }
+    }
+
+    public void sendTestRequest() {
+        writer.sendRequest("test");
     }
 }
