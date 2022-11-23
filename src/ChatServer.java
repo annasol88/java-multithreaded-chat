@@ -10,13 +10,16 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class ChatServer implements Runnable {
+    // For Stress Testing thread pool
+    public int testsReceived = 0;
+
     private final int port;
     private ServerSocket serverSocket = null;
-    private static final ExecutorService threadPool = Executors.newCachedThreadPool();
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(50);
 
     private static ServerData data;
 
-    private final List<ChatClientThread> runningChats = Collections.synchronizedList(new ArrayList<>());
+    private List<ChatClientThread> runningChats = Collections.synchronizedList(new ArrayList<>());
 
     public ChatServer(int port) {
         this.port = port;
@@ -35,13 +38,12 @@ public class ChatServer implements Runnable {
                     threadPool.submit(new ChatClientThread(socket, this));
                     System.out.println("new client connected: " + socket.getPort());
                 } catch (IOException e) {
-                    System.err.println("Failed to accept client connection");
-                    e.printStackTrace();
+                    System.err.println("server socket connection lost");
                     break;
                 }
             }
         } catch (IOException e) {
-            System.err.println("Could not connect to port");
+            System.err.println("port connection lost");
             e.printStackTrace();
         } finally {
             stop();
@@ -51,18 +53,22 @@ public class ChatServer implements Runnable {
     public synchronized void stop() {
         System.out.println("Server closed");
         try {
+            serverSocket.close();
+            threadPool.shutdown();
             this.serverSocket.close();
         } catch (IOException e) {
-            throw new RuntimeException("Error closing server", e);
+            throw new RuntimeException("Failed to close server", e);
         }
     }
 
-    /*
+    /**
+     * checks credentials are correct
+     * @return user the password and username belong to or null if they are wrong
      * validates user credentials.
      * No need to synchronize here because we are only reading data and
-     * our concurrentHashmap will take care of writes happening at the same time.
+     * our concurrentHashmap implementation should cause this to wait for any writes happening at the same time.
      */
-    public User VerifyUserCredentials(String username, String password) {
+    public User verifyUserCredentials(String username, String password) {
         User user = getAccountByUsername(username);
         //if user exist check password and password correct
         if (user != null && user.getPassword().equals(password)) {
@@ -71,11 +77,13 @@ public class ChatServer implements Runnable {
         return null;
     }
 
-    /*
+    /**
+     * logs in a user
+     * @return false if a user is already logged in
      * synchronizing on user ensures 2 users can't log in at the same time.
      * This is intentionally isolated this from verifying credentials above
-     * since it could remove some potential for deadlocks as we are only synchronizing
-     * on user when we need to. This also allows us to reuse this when we register a user
+     * to remove some potential for deadlocks as we are only synchronizing
+     * on user when we need to and releasing the object as soon as we log in.
      */
     public boolean loginUser(User user) {
         synchronized (user) {
@@ -87,50 +95,83 @@ public class ChatServer implements Runnable {
         }
     }
 
+    /**
+     * saves a username when registering
+     * @return true if username is free
+     * From our understanding of the Java docs putIfAbsent() should synchronize
+     * on the conCurrentHashmap object to prevent a race condition from occurring
+     * if 2 threads try to save username at once.
+     */
     public boolean saveUsernameIfFree(String username) {
-        if (!accountExists(username)) {
-            //adding placeholder to prevent username being taken by another client
-            data.accounts.put(username, new User(null, null, null, null));
-            return true;
-        }
-        return false;
+        return data.accounts.putIfAbsent(
+                username,
+                new User(null, null, null, null)) == null;
     }
 
+    /**
+     * adds user to data.accounts
+     * by design the key is already reserved with a dud user when registering a username
+     * which checks if the key is free so we can be confident that this operation is safe
+     * from accidental or synchronous overwrites.
+     */
     public void registerUser(User user) {
         data.accounts.put(user.getUsername(), user);
     }
 
-    public boolean chatRoomExists(String chatName) {
-        return data.chatRooms.get(chatName) != null;
-    }
-
-    public boolean accountExists(String username) {
-        return data.accounts.get(username) != null;
-    }
-
+    /**
+     * @return a list of user chat rooms that @param user is a part of.
+     * This is a read only operation hence safe no lock is placed in here.
+     */
     public List<ChatRoom> getUserChatRooms(User user) {
         return data.chatRooms.values().stream().filter(n -> n.getMembers().contains(user))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @return if a chat room exists in data
+     * This is a read only operation hence safe no lock is placed in here.
+     */
+    public boolean chatRoomExists(String chatName) {
+        return getChatRoomByName(chatName) != null;
+    }
+
+    /**
+     * @return if a user exists in data
+     * This is a read only operation hence safe no lock is placed in here.
+     */
+    public boolean accountExists(String username) {
+        return getAccountByUsername(username) != null;
+    }
+
+    /**
+     * @return a list of users associated to a chatroom
+     * This is a read only operation hence safe no lock is placed in here.
+     */
     public Collection<User> getChatRoomMembers(String chatName) {
-        ChatRoom chat = data.chatRooms.get(chatName);
-        if (chat != null) {
+        ChatRoom chat = getChatRoomByName(chatName);
+        if (chatRoomExists(chatName)) {
             return chat.getMembers().values();
         }
         return null;
     }
 
+    /**
+     * @return if the @param user is a member of @param chatroom
+     * This is a read only operation hence safe no lock is placed in here.
+     */
     public boolean isUserMemberOfChatroom(String chatRoomName, String username) {
         return getChatRoomMembers(chatRoomName).contains(getAccountByUsername(username));
     }
 
-    public User getAccountByUsername(String username) {
-        return data.accounts.get(username);
-    }
-
+    /**
+     * adds a ChatClientThread to runningChats so that other threads in the same chatroom receive their message
+     * while a synchronized list provides serial access to its elements to promote thead safety
+     * it does not lock for add operations hence this is done here to prevent synchronisation issues.
+     */
     public void addToRunningChats(ChatClientThread client) {
-        this.runningChats.add(client);
+        synchronized(runningChats) {
+            runningChats.add(client);
+        }
     }
 
     public void sendMessageToChatRoom(String message, String chatRoom, ChatClientThread senderThread) {
@@ -149,13 +190,13 @@ public class ChatServer implements Runnable {
     }
 
     public void removeRunningChats(ChatClientThread client) {
-        this.runningChats.remove(client);
+            this.runningChats.remove(client);
     }
 
     public void leaveChatRoom(String chatName, String username) {
-        data.chatRooms.get(chatName).getMembers().remove(username);
+        getChatRoomByName(chatName).getMembers().remove(username);
         // destroy chat if empty
-        if (data.chatRooms.get(chatName).getMembers().isEmpty()) {
+        if (getChatRoomByName(chatName).getMembers().isEmpty()) {
             data.chatRooms.remove(chatName);
         }
     }
@@ -163,19 +204,19 @@ public class ChatServer implements Runnable {
     public boolean sendFriendRequest(String requestee, User requester) {
         User requesteeUser = getAccountByUsername(requestee);
 
-        if (data.accounts.get(requester.getUsername()).getFriends().contains(requesteeUser)) {
+        if (getAccountByUsername(requester.getUsername()).getFriends().contains(requesteeUser)) {
             return false;
         }
         //the concurrentHashMap will remove duplicate requests so no need to check
-        data.accounts.get(requestee).addFriendRequest(requester);
+        getAccountByUsername(requestee).addFriendRequest(requester);
         return true;
     }
 
     public void acceptFriendRequest(String requester, User requestee) {
         User requesterUser = getAccountByUsername(requester);
 
-        data.accounts.get(requester).addFriend(requestee);
-        data.accounts.get(requestee.getUsername()).addFriend((requesterUser));
+        getAccountByUsername(requester).addFriend(requestee);
+        getAccountByUsername(requestee.getUsername()).addFriend((requesterUser));
 
         removeFriendRequest(requester, requestee);
     }
@@ -185,17 +226,35 @@ public class ChatServer implements Runnable {
     }
 
     public void editAccountName(User user, String name) {
-        data.accounts.get(user.getUsername()).setName(name);
+        getAccountByUsername(user.getUsername()).setName(name);
     }
 
     public void editAccountBio(User user, String bio) {
-        data.accounts.get(user.getUsername()).setBio(bio);
+        getAccountByUsername(user.getUsername()).setBio(bio);
     }
 
     public void logoutUser(User user) {
         synchronized (user) {
             user.setLoggedIn(false);
         }
+    }
+
+    public User getAccountByUsername(String username) {
+        return data.accounts.get(username);
+    }
+
+    public ChatRoom getChatRoomByName(String name) {
+        return data.chatRooms.get(name);
+    }
+
+    public void receiveTestRequest() {
+        synchronized ((Integer) testsReceived) {
+            testsReceived += 1;
+        }
+    }
+
+    public List<ChatClientThread> getRunningChats() {
+        return runningChats;
     }
 }
 

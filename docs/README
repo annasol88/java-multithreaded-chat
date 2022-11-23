@@ -1,0 +1,17 @@
+Running the application:
+
+IP and Port configurations can be found inside Utils.
+    Currently set to run locally with the random port number of 9876.
+    Please modify this if desired.
+
+Running server:
+    Run main in ServerDriver to run an instance of our ChatServer.
+    This will run waiting for sockets to connect.
+
+Running Client:
+    Run main in ClientDriver to run an instance of a ChatClient.
+    This will open a console UI which you can interact with.
+
+Running multiple clients on the same machine:
+    Edit configuration settings for ClientDriver to allow parallel run and
+    run ClientDriver.main as many times as desired.

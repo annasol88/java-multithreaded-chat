@@ -106,6 +106,9 @@ public class ChatClientThread implements Runnable {
                     case "logout":
                         logout();
                         break;
+                    case "test":
+                        test();
+                        break;
                     case "stop":
                         break;
                     default:
@@ -124,7 +127,7 @@ public class ChatClientThread implements Runnable {
         String username = credentials[0];
         String password = credentials[1];
 
-        User user = server.VerifyUserCredentials(username, password);
+        User user = server.verifyUserCredentials(username, password);
 
         if (user == null) {
             output.println("login invalid");
@@ -218,7 +221,7 @@ public class ChatClientThread implements Runnable {
     private void enterChatRoom(String chatName) {
         openChatRoom = chatName;
         server.addToRunningChats(this);
-        server.sendMessageToChatRoom(currentUser.getName() +" has entered the chat.", openChatRoom, this);
+        server.sendMessageToChatRoom(currentUser.getName() + " has entered the chat.", openChatRoom, this);
         output.println("run chat room");
     }
 
@@ -296,5 +299,9 @@ public class ChatClientThread implements Runnable {
         if (currentUser != null) {
             logout();
         }
+    }
+
+    private void test() {
+        server.receiveTestRequest();
     }
 }

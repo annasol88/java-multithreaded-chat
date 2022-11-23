@@ -59,11 +59,11 @@ public class User {
     }
 
     public void addFriend(User user) {
-        friends.put(user.getUsername(), user);
+        friends.putIfAbsent(user.getUsername(), user);
     }
 
     public void addFriendRequest(User user) {
-        pendingFriendRequest.put(user.getUsername(), user);
+        pendingFriendRequest.putIfAbsent(user.getUsername(), user);
     }
 
     public void removeFriendRequest(User user) {
