@@ -18,7 +18,6 @@ public class ChatServer implements Runnable {
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(50);
 
     private static ServerData data;
-
     private List<ChatClientThread> runningChats = Collections.synchronizedList(new ArrayList<>());
 
     public ChatServer(int port) {
@@ -103,7 +102,7 @@ public class ChatServer implements Runnable {
      * if 2 threads try to save username at once.
      */
     public boolean saveUsernameIfFree(String username) {
-        return data.accounts.putIfAbsent(
+        return data.accounts.put(
                 username,
                 new User(null, null, null, null)) == null;
     }
@@ -115,7 +114,7 @@ public class ChatServer implements Runnable {
      * from accidental or synchronous overwrites.
      */
     public void registerUser(User user) {
-        data.accounts.put(user.getUsername(), user);
+        data.accounts.putIfAbsent(user.getUsername(), user);
     }
 
     /**
@@ -150,7 +149,7 @@ public class ChatServer implements Runnable {
     public Collection<User> getChatRoomMembers(String chatName) {
         ChatRoom chat = getChatRoomByName(chatName);
         if (chatRoomExists(chatName)) {
-            return chat.getMembers().values();
+            return chat.getMembers();
         }
         return null;
     }
@@ -164,16 +163,21 @@ public class ChatServer implements Runnable {
     }
 
     /**
-     * adds a ChatClientThread to runningChats so that other threads in the same chatroom receive their message
-     * while a synchronized list provides serial access to its elements to promote thead safety
-     * it does not lock for add operations hence this is done here to prevent synchronisation issues.
+     * adds a ChatClientThread to runningChats so that other threads in the same chatroom receive their message.
+     * synchronizedList implementation ensures this operation is thread safe
      */
-    public void addToRunningChats(ChatClientThread client) {
-        synchronized(runningChats) {
-            runningChats.add(client);
-        }
+    public void addRunningChat(ChatClientThread client) {
+        runningChats.add(client);
     }
 
+    /**
+     * sends the @param message to everyone currently running @param chatroom.
+     * While a synchronized list provides synchronized access to elements, it is suggested in the documentation
+     * that atomic access does not guarantee thread safety on iterations of it, therefore it is synchronized here, to prevent
+     * parallel access issues if the array is modified while being traversed.
+     * It was also considered that if the application supported saving messages in a chatroom in future, this would need
+     * to lock on the current chatroom object being written to, and consideration for deadlocks would need to be taken.
+     */
     public void sendMessageToChatRoom(String message, String chatRoom, ChatClientThread senderThread) {
         synchronized (runningChats) {
             for (ChatClientThread clientThread : runningChats) {
@@ -189,63 +193,117 @@ public class ChatServer implements Runnable {
         }
     }
 
-    public void removeRunningChats(ChatClientThread client) {
-            this.runningChats.remove(client);
+    /**
+     * removes the ChatClientThread from runningChats when a user closes a chat room.
+     * synchronizedList implementation ensures this operation is thread safe
+     */
+    public void removeRunningChat(ChatClientThread client) {
+        this.runningChats.remove(client);
     }
 
+    /**
+     * removes @param member from a chat room provided by @param chatName.
+     * and destroys the chatroom if it is empty.
+     * ConcurrentHashMap will ensure the remove operations for the chat member and chatroom are
+     * synchronous hence thread safe.
+     */
     public void leaveChatRoom(String chatName, String username) {
-        getChatRoomByName(chatName).getMembers().remove(username);
+        ChatRoom chat = getChatRoomByName(chatName);
+        chat.removeMember(username);
         // destroy chat if empty
-        if (getChatRoomByName(chatName).getMembers().isEmpty()) {
+        if (chat.getMembers().isEmpty()) {
             data.chatRooms.remove(chatName);
         }
     }
 
-    public boolean sendFriendRequest(String requestee, User requester) {
+    /**
+     * sends a friend request to the @param requestee
+     * the ConcurrentHashmap implementation for friendRequests ensures a friend request will be added concurrently.
+     * hence this will not cause synchronisation issue.
+     * checking if the users are already friends is a read-only operation hence is allowed to be accessed in parallel
+     */
+    public boolean sendFriendRequest(String requestee, String requester) {
+        User requesterUser = getAccountByUsername(requester);
         User requesteeUser = getAccountByUsername(requestee);
 
-        if (getAccountByUsername(requester.getUsername()).getFriends().contains(requesteeUser)) {
+        if (requesterUser.getFriends().contains(requesteeUser)) {
             return false;
         }
         //the concurrentHashMap will remove duplicate requests so no need to check
-        getAccountByUsername(requestee).addFriendRequest(requester);
+        requesteeUser.addFriendRequest(requesterUser);
         return true;
     }
 
-    public void acceptFriendRequest(String requester, User requestee) {
+    public void acceptFriendRequest(String requester, String requestee) {
         User requesterUser = getAccountByUsername(requester);
+        User requesteeUser = getAccountByUsername(requestee);
 
-        getAccountByUsername(requester).addFriend(requestee);
-        getAccountByUsername(requestee.getUsername()).addFriend((requesterUser));
+        requesterUser.addFriend(requesteeUser);
+        requesteeUser.addFriend(requesterUser);
 
         removeFriendRequest(requester, requestee);
+        // if exists
+        removeFriendRequest(requestee, requester);
     }
 
-    public void removeFriendRequest(String requester, User requestee) {
-        requestee.removeFriendRequest(getAccountByUsername(requester));
+    public void removeFriendRequest(String requester, String requestee) {
+        User requesterUser = getAccountByUsername(requester);
+        User requesteeUser = getAccountByUsername(requestee);
+
+        requesteeUser.removeFriendRequest(requesterUser);
     }
 
+    /**
+     * updates the @param user's name to @param name
+     * this request will never be made in parallel since the application only supports one user having access to modify their account at a time
+     * however adding admin functionality would require a synchronized lock on the user prevent parallel access issues.
+     */
     public void editAccountName(User user, String name) {
         getAccountByUsername(user.getUsername()).setName(name);
     }
 
+    /**
+     * updates the @param user's bio to @param bio
+     * this request will never be made in parallel since the application only supports one user having access to modify their account at a time
+     * however adding admin functionality would require a synchronized lock on the user prevent parallel access issues.
+     */
     public void editAccountBio(User user, String bio) {
         getAccountByUsername(user.getUsername()).setBio(bio);
     }
 
+    /**
+     * logs out the @param user
+     * since the application only supports one user being logged in at a given time this request will never be made in parallel
+     * however if admin functionality was integrated into the application, this would need a synchronized lock
+     * to prevent parallel access issues.
+     */
     public void logoutUser(User user) {
-        synchronized (user) {
-            user.setLoggedIn(false);
-        }
+        user.setLoggedIn(false);
     }
 
+    /**
+     * @return the user associated with the @param username
+     * readonly access which doesn't require a lock.
+     * by design, extracted from functions where one user is modified to remove bottle necks from locking on the
+     * entire account object.
+     * with the addition of admin functionality, functions calling this will need to lock on the user object returned
+     * to prevent synchronization issues with the user being deleted mid modification.
+     */
     public User getAccountByUsername(String username) {
         return data.accounts.get(username);
     }
 
+    /**
+     * @return the chatroom associated with the @param chatName
+     * readonly access which doesn't require a lock.
+     * by design, extracted from functions where one chat room is modified to remove bottle necks from locking on the
+     * entire chatRooms object.
+     */
     public ChatRoom getChatRoomByName(String name) {
         return data.chatRooms.get(name);
     }
+
+    //  For Testing - to give access to different properties in the server
 
     public void receiveTestRequest() {
         synchronized ((Integer) testsReceived) {
@@ -253,8 +311,16 @@ public class ChatServer implements Runnable {
         }
     }
 
+    public void addTestUserAccount(User user) {
+        data.accounts.putIfAbsent(user.getUsername(), user);
+    }
+
     public List<ChatClientThread> getRunningChats() {
         return runningChats;
+    }
+
+    public ServerData getData() {
+        return data;
     }
 }
 
