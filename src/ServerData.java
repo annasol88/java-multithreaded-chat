@@ -1,8 +1,8 @@
 import java.util.concurrent.ConcurrentHashMap;
 
-/*
+/**
  * Serves as a DB for our server
- * Giving a nice set of mock data to work with upon initial load
+ * Currently pre-populated with a set of mock data to work with
  */
 public class ServerData {
     public static ConcurrentHashMap<String, ChatRoom> chatRooms;

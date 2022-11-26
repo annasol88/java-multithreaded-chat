@@ -178,34 +178,6 @@ public class ChatServerSynchronisationTest {
         assertEquals(testNumber, requestsSent);
     }
 
-    @Test
-    public void editAccountName_isSynchronized() throws InterruptedException {
-        Runnable editAccountChatThread = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Socket socket = new Socket(Utils.SERVER_IP, Utils.PORT);
-                    ChatClient client = new ChatClient(socket, false);
-                    client.testMockCurrentUser();
-                    client.profileEditName("new name");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-
-        int testNumber = 20;
-        for (int i = 0; i < testNumber; i++) {
-            new Thread(editAccountChatThread).start();
-        }
-
-        Thread.sleep(3000);
-        long editedAccounts = server.getData().accounts.values().stream()
-                .filter(account -> account.getName().equals("new name")).count();
-
-        assertEquals(testNumber, editedAccounts);
-    }
-
     @AfterEach
     public void tearDown() throws InterruptedException {
         Thread.sleep(3000);

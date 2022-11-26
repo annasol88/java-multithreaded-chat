@@ -30,33 +30,40 @@ from the server (or other client in a chatroom) to not get blocked because the C
 
 ## Synchronization
 
-#### ConcurrentHashmap implementation
-Our application uses the Java Util Concurrent Hashmap to store:
-- chat rooms in a server
-- accounts in a server
-- friends list & friends request list on a User object
+#### ConcurrentHashmap implementation for collections
+Java Util ConcurrentHashmap was used to store certain permanent collections in the application since it implements 
+concurrent access to its objects for modify (put and remove) operations preventing synchronisation issues 
+while not locking for its retrieval (get) operations, hence preventing the potential for deadlocks.
 
-This is an implementation for storing data that should be accessed synchronously.
-From the Java Docs it is stated that a ConcurrentHashmap allows any number of threads 
-to perform retrieval operation at any given time, hence preventing the potential for deadlocks on read-only operations,
-such as get user chat rooms, get chat members, get user profile etc.
-
-However, for put operations the Object provides a putIfAbsent() method which locks on the hashmap object
-only allowing one thread to put something in the hashmap at a time, hence preventing synchronisation issues from occurring.
-such as in: register user, send friend request, create new chatroom.
-//TOREFACTOR
+collections stored using ConcurrentHashMap:
+- chat rooms
+- chat members
+- user accounts
+- user friends list 
+- user friends request list
 
 #### Synchronizing on objects
-for updates objects r synchronized
-//TODO
+It was recognised however that ConcurrentHashMap only synchronizes on atomic modifications such as a single put or remove. 
+When the object stored within the hashmap need to be fetched then modified the ConcurrentHashMap will not prevent threading
+issues from occurring hence synchronized locks need to be placed manually where this is appropriate.
+In the current implementation (without admin functionality) some functions will never be invoked in parallel by multiple threads, 
+and these synchronized locks are omitted because they are assumed unnecessary for now. 
+This is documented in the java doc for each server function along with modifications that would be made if admin 
+functionality was incorporated.
 
-#### synchronizedList
+#### synchronizedList for server runningChats
 For chat messaging functionality, the server stores a list to reference all the clients.
 synchronizedList implements concurrent access during add() and remove() operations ensuring thread-safety, 
 hence no need to synchronize manually in the app.
 running a chatroom and iterates through them to send messages to active users. 
 This is synchronized when being traversed (as suggested in the docs) to ensure thread 
-safety between parallel threads leaving and joining a chatroom.
+safety between parallel threads leaving and joining a chatroom. 
+
+#### WriterThread ConcurrentLinkedQueue
+WriterThread implements a ConcurrentLinkedQueue for queuing requests sent from client to server.
+This was intended to remove synchronisation issues with multiple requests coming in parallel, 
+However given our implementation requests are only written to a server as a user inputs something, 
+hence are very unlikely to happen in parallel, making the queue redundant. Ideally this should be refactored. 
 
 ## Deadlocks
 #### Application designed to prevent possibility of deadlocks
@@ -69,9 +76,6 @@ server functions have been constructed to only lock on 1 resource at a time when
 This prevents a hold and wait since there is nothing to wait for.
 
 Circular waits are therefore impossible with our implementation.
-
-#### server requests queued in a concurrentLinkedQueue
-This was intended to remove synchronisation issues 
 
 ## ThreadPool
 A newFixedThreadPool implementation with 50 threads was used in the application. 
@@ -97,4 +101,3 @@ The application is currently missing Admin functionality, which was anticipated 
 and focus on quality of thread-safety as opposed to quantity of features.
 However, the addition of admin features was thought about and where modifications need to be made to 
 prevent synchronisation issues in the server this is documented as a javadoc against the functions.
-
