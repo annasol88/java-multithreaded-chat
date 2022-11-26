@@ -2,7 +2,7 @@
 
 ## Threading
 
-#### Operational Threads.
+### Operational Threads.
 
 1. The ChatServer itself runs on a thread which accepts to new socket connections 
 as they come through clients running the app. 
@@ -12,7 +12,7 @@ This allows server functions to be invoked by other threads without being blocke
 ChatClientThread to the thread pool for execution. Each ChatClientThread listens to requests coming from the socket
 input stream (sent by a ChatClient) and responding to them appropriately.
 
-#### Client Threads:
+### Client Threads:
 
 1. ListenerThread - dedicated to listening to the socket input stream (receiving messages from the server) 
 and invoking the appropriate responses in the client. Having this on a separate thread prevents the 
@@ -30,7 +30,7 @@ from the server (or other client in a chatroom) to not get blocked because the C
 
 ## Synchronization
 
-#### ConcurrentHashmap implementation for collections
+### ConcurrentHashmap implementation for collections
 Java Util ConcurrentHashmap was used to store certain permanent collections in the application since it implements 
 concurrent access to its objects for modify (put and remove) operations preventing synchronisation issues 
 while not locking for its retrieval (get) operations, hence preventing the potential for deadlocks.
@@ -42,7 +42,7 @@ collections stored using ConcurrentHashMap:
 - user friends list 
 - user friends request list
 
-#### Synchronizing on objects
+### Synchronizing on objects
 It was recognised however that ConcurrentHashMap only synchronizes on atomic modifications such as a single put or remove. 
 When the object stored within the hashmap need to be fetched then modified the ConcurrentHashMap will not prevent threading
 issues from occurring hence synchronized locks need to be placed manually where this is appropriate.
@@ -51,7 +51,7 @@ and these synchronized locks are omitted because they are assumed unnecessary fo
 This is documented in the java doc for each server function along with modifications that would be made if admin 
 functionality was incorporated.
 
-#### synchronizedList for server runningChats
+### SynchronizedList for server runningChats
 For chat messaging functionality, the server stores a list to reference all the clients.
 synchronizedList implements concurrent access during add() and remove() operations ensuring thread-safety, 
 hence no need to synchronize manually in the app.
@@ -59,14 +59,14 @@ running a chatroom and iterates through them to send messages to active users.
 This is synchronized when being traversed (as suggested in the docs) to ensure thread 
 safety between parallel threads leaving and joining a chatroom. 
 
-#### WriterThread ConcurrentLinkedQueue
+### WriterThread ConcurrentLinkedQueue
 WriterThread implements a ConcurrentLinkedQueue for queuing requests sent from client to server.
 This was intended to remove synchronisation issues with multiple requests coming in parallel, 
 However given our implementation requests are only written to a server as a user inputs something, 
 hence are very unlikely to happen in parallel, making the queue redundant. Ideally this should be refactored. 
 
 ## Deadlocks
-#### Application designed to prevent possibility of deadlocks
+### Application designed to prevent possibility of deadlocks
 Read-only (get) server functions allow parallel access at all times, 
 This prevents mutual exclusion and won't cause any synchronisation issues 
 with the data, (at most one client will have a slightly out of date view).
@@ -87,7 +87,6 @@ however from our understanding of the documentation this is only appropriate for
 not a chat interface that will run for several minutes.
 
 ## IO Streams
-#### Reasoning for choosing the following IO stream objects
 PrintWriter - Unlike BufferedReader and allows auto-flush for every println/print/write which
 removes the need to manually call the flush() method each time data is written.
 The println operation also adds a /n (new line) exit character to strings written, which removes the
@@ -96,7 +95,7 @@ need to manually do this.
 BufferedReader - A fast and efficient implementation for reading Strings from an input stream.
 
 ## Some considerations for future
-#### missing functionality
+### missing functionality
 The application is currently missing Admin functionality, which was anticipated due to low capacity 
 and focus on quality of thread-safety as opposed to quantity of features.
 However, the addition of admin features was thought about and where modifications need to be made to 
