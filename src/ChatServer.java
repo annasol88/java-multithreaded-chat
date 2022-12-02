@@ -217,10 +217,14 @@ public class ChatServer implements Runnable {
     }
 
     /**
-     * sends a friend request to the @param requestee
-     * the ConcurrentHashmap implementation for friendRequests ensures a friend request will be added concurrently.
-     * hence this will not cause synchronisation issue.
-     * checking if the users are already friends is a read-only operation hence is allowed to be accessed in parallel
+     * sends a friend request to the @param requestee.
+     * checking if the users are already friends is a read-only operation
+     * hence it's intentionally done without any lock because it would be unnecessary.
+     * the ConcurrentHashmap implementation for user friendRequests will provide concurrent access when a new request is added.
+     * With the addition of admin functionality a user could get deleted mid operation,
+     * hence a synchronized lock should be placed on both the requesteeUser and requestorUser to make this thread safe,
+     * with requesterUser locked around the if statement and requesteeUser locked around the add operation to mitigate
+     * the possibility of deadlocks with nested locks.
      */
     public boolean sendFriendRequest(String requestee, String requester) {
         User requesterUser = getAccountByUsername(requester);
@@ -229,7 +233,7 @@ public class ChatServer implements Runnable {
         if (requesterUser.getFriends().contains(requesteeUser)) {
             return false;
         }
-        //the concurrentHashMap will remove duplicate requests so no need to check
+        // ConcurrentHashMap will overwrite duplicate requests so no need to check
         requesteeUser.addFriendRequest(requesterUser);
         return true;
     }

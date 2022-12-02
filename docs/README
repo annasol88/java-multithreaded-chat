@@ -15,3 +15,6 @@ Running Client:
 Running multiple clients on the same machine:
     Edit configuration settings for ClientDriver to allow parallel run and
     run ClientDriver.main as many times as desired.
+
+Running Synchronization Tests:
+    Please run tests one at a time rather than the whole test suite for them to work.

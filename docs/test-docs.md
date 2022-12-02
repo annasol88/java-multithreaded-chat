@@ -26,19 +26,21 @@ ChatServerSynchronizationTest runs a series of stress tests on individual functi
 that require concurrent access to objects. 
 
 NB: The tests in the test suite need to be run individually 
-because for each test a new server is created with the same server port which will not be allowed on the one machine.
+because for each test a new server is being created with the same server port which will not work on the one machine.
 
-It is observed that synchronized objects lock where expected and our concurrentHashmap and synchronizedList 
+It is also observed that synchronized objects lock where expected and our concurrentHashmap and synchronizedList 
 implementations do not cause parallel access issues.
 
-It was also observed that when changing:
-- Collections.synchronizedList -> ArrayList
-- ConcurrentHashMap -> HashMap
+It was also observed that when:
+- changing Collections.synchronizedList -> ArrayList
+- changing ConcurrentHashMap -> HashMap
+- removing synchronized() lock 
 
-these tests did not pass hence proving the reliability of the tests 
+these tests did not pass, and not all threads changes were recognised.
+Hence, proving these 
 and showing that the ConcurrentHashMap and Collections.synchronizedList implementations behave as expected.
 
 ## Acceptance Testing
-All acceptance tests were documented in: ... 
-demonstrating that all the core functionality that was implemented works as
-expected under normal circumstances
+The acceptance tests carried out are documented in testing/uat-tests.docx
+To demonstrate the core functionality that was implemented works as
+expected under normal circumstances.

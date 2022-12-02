@@ -254,7 +254,7 @@ public class ChatClient {
     }
 
     public void registerUsernameTaken() {
-        System.out.println("Username is already take. Please enter another one:");
+        System.out.println("Username is already taken. Please enter another one:");
     }
 
     public void registerUsernameFreeGetPassword() {

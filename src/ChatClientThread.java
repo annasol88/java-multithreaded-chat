@@ -309,6 +309,7 @@ public class ChatClientThread implements Runnable {
         server.receiveTestRequest();
     }
 
+    // sets a pretend currentUser for testing
     private void testMockCurrentUser(String[] params) {
         String username = params[0];
         String password = params[1];

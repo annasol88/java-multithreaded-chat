@@ -21,7 +21,7 @@ socket -> inputStream -> readLine() function from blocking client operations.
 2. WriterThread - dedicated to queuing client requests and sending them to the socket output stream 
 (sending messages to the server). The implementation of client requests as a queue was made to 
 mitigate potential for synchronization issues with multiple requests coming in 
-however it was since discovered that synchronization issues are very unlikely with our basic implementation
+however it has been since discovered that synchronization issues are very unlikely with our basic implementation
 (requests only come in as fast as a user types...) making this thread redundant.
 
 3. ConsoleListenerThread - dedicated to listening to user input from the command line and sending it back to the client 
@@ -98,5 +98,9 @@ BufferedReader - A fast and efficient implementation for reading Strings from an
 ### missing functionality
 The application is currently missing Admin functionality, which was anticipated due to low capacity 
 and focus on quality of thread-safety as opposed to quantity of features.
-However, the addition of admin features was thought about and where modifications need to be made to 
+However, the addition of admin features has been thought about and where modifications need to be made to 
 prevent synchronisation issues in the server this is documented as a javadoc against the functions.
+
+There were also some merge conflicts to close to the end of submission, 
+hence functionality for private messaging a user and creating a new chatroom will be omitted for the submission
+and replaced with to be implemented responses.
