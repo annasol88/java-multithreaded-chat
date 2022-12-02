@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.Random;
 
 public class ChatClient {
     // represents the current screen the user is responding to
@@ -253,7 +254,7 @@ public class ChatClient {
     }
 
     public void registerUsernameTaken() {
-        System.out.println("Username is already take. Please enter another one:");
+        System.out.println("Username is already taken. Please enter another one:");
     }
 
     public void registerUsernameFreeGetPassword() {
@@ -367,12 +368,16 @@ public class ChatClient {
     public void chatMemberDoMenuSelection() {
         switch (tempStorage.get("chat member action")) {
             case "1":
-                writer.sendRequest("send friend request:" + tempStorage.get("chat member name"));
+                chatMemberSendFriendRequest();
                 break;
             case "2":
                 writer.sendRequest("view profile:" + tempStorage.get("chat member name"));
                 break;
         }
+    }
+
+    public void chatMemberSendFriendRequest() {
+        writer.sendRequest("send friend request:" + tempStorage.get("chat member name"));
     }
 
     public void chatMemberFriendRequestSent() {
@@ -427,6 +432,7 @@ public class ChatClient {
     public void friendsListShow(String[] friends) {
         if (friends.length == 0) {
             System.out.println("You don't currently have any friends in your friends list.");
+            showMainMenu();
             return;
         }
 
@@ -483,8 +489,8 @@ public class ChatClient {
     }
 
     public void friendRequestAccept() {
-        System.out.println("request denied for: " + tempStorage.get("friend request name"));
-        writer.sendRequest("deny friend request:" + tempStorage.get("friend request name"));
+        System.out.println("request accepted for: " + tempStorage.get("friend request name"));
+        writer.sendRequest("accept friend request:" + tempStorage.get("friend request name"));
 
     }
 
@@ -550,7 +556,15 @@ public class ChatClient {
         }
     }
 
-    public void sendTestRequest() {
+    // For Testing
+    public void testSendRequest() {
         writer.sendRequest("test");
+    }
+
+    public String testMockCurrentUser() {
+        // for unique usernames
+        String username = "username" + new Random().nextInt();
+        writer.sendRequest("test mock user: " + username + ", testPassword, testName, testBio");
+        return username;
     }
 }

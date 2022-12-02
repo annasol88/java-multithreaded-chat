@@ -106,10 +106,13 @@ public class ChatClientThread implements Runnable {
                     case "logout":
                         logout();
                         break;
+                    case "stop":
+                        break;
                     case "test":
                         test();
                         break;
-                    case "stop":
+                    case "test mock user":
+                        testMockCurrentUser(params);
                         break;
                     default:
                         output.println("Error: request not recognised: " + request);
@@ -205,7 +208,7 @@ public class ChatClientThread implements Runnable {
             output.println("cannot friend request yourself");
             return;
         }
-        if (server.sendFriendRequest(requestUsername, currentUser)) {
+        if (server.sendFriendRequest(requestUsername, currentUser.getUsername())) {
             output.println("friend request sent");
             return;
         }
@@ -220,7 +223,7 @@ public class ChatClientThread implements Runnable {
 
     private void enterChatRoom(String chatName) {
         openChatRoom = chatName;
-        server.addToRunningChats(this);
+        server.addRunningChat(this);
         server.sendMessageToChatRoom(currentUser.getName() + " has entered the chat.", openChatRoom, this);
         output.println("run chat room");
     }
@@ -235,7 +238,7 @@ public class ChatClientThread implements Runnable {
     private void exitChatRoom() {
         server.sendMessageToChatRoom(currentUser.getName() +" has closed the chat.", openChatRoom, this);
         openChatRoom = null;
-        server.removeRunningChats(this);
+        server.removeRunningChat(this);
     }
 
     private void leaveChatRoom(String chatName) {
@@ -270,11 +273,11 @@ public class ChatClientThread implements Runnable {
     }
 
     private void acceptFriendRequest(String username) {
-        server.acceptFriendRequest(username, currentUser);
+        server.acceptFriendRequest(username, currentUser.getUsername());
     }
 
     private void denyFriendRequest(String username) {
-        server.removeFriendRequest(username, currentUser);
+        server.removeFriendRequest(username, currentUser.getUsername());
     }
 
     private void viewOwnProfile() {
@@ -301,7 +304,20 @@ public class ChatClientThread implements Runnable {
         }
     }
 
+    // For Testing
     private void test() {
         server.receiveTestRequest();
+    }
+
+    // sets a pretend currentUser for testing
+    private void testMockCurrentUser(String[] params) {
+        String username = params[0];
+        String password = params[1];
+        String name = params[2];
+        String bio = params[3];
+
+        User user = new User(name, bio, username, password);
+        currentUser = user;
+        server.addTestUserAccount(user);
     }
 }

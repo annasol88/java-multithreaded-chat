@@ -12,7 +12,7 @@ public class ChatServerStressTest {
         for(int i = 0; i < testNumberOfThreads; i++) {
             Socket socket = new Socket(Utils.SERVER_IP, Utils.PORT);
             ChatClient client = new ChatClient(socket, true);
-            client.sendTestRequest();
+            client.testSendRequest();
         }
 
         // Wait for our server to send the test requests

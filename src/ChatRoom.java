@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatRoom {
@@ -15,7 +16,11 @@ public class ChatRoom {
         return name;
     }
 
-    public ConcurrentHashMap<String, User> getMembers() {
-        return members;
+    public Collection<User> getMembers() {
+        return members.values();
+    }
+
+    public void removeMember(String username) {
+        members.remove(username);
     }
 }
